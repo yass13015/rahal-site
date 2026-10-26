@@ -40,10 +40,7 @@ export const site = {
   navCta: { label: 'Prochain départ : Chine', href: '/experiences/chine' },
 
   /** Liens légaux du pied de page (configurables). */
-  legalLinks: [
-    { label: 'Confidentialité', href: '/confidentialite' },
-    { label: 'Mentions légales', href: '/mentions-legales' },
-  ],
+  legalLinks: [] as { label: string; href: string }[],
 
   footer: {
     note: 'Voyages en petit groupe. Une destination, une pratique, une aventure partagée.',
