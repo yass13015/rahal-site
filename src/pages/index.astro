@@ -129,6 +129,24 @@ const pillars: { title: string; text: string; image: ImageRef }[] = [
   /* Mot du fondateur : portrait en arche, comme l'affiche, avec l'ombre sable décalée. */
   .founder-note{display:grid;gap:2.5rem;align-items:center}.founder-portrait{width:100%;max-width:22rem;margin-inline:auto;padding:0 1rem 1.25rem 0}.founder-portrait :global(.photo__frame){border-radius:50% 50% 1rem 1rem / 34% 34% 1rem 1rem;box-shadow:14px 18px 0 var(--c-sable)}.founder-text{display:grid;gap:1.3rem}.founder-note p:not(.kicker){color:var(--c-gris);max-width:43rem}.founder-note .founder-sign{font-family:var(--font-serif);font-style:italic;font-size:2rem;line-height:1;color:#875430;margin-top:-.25rem}.founder-note .link-arrow{justify-self:start;font-size:.9rem}
   .brand-closing{background:#254139;color:#f7f3eb;text-align:center}.brand-closing .container{display:grid;justify-items:center;gap:1.8rem}.brand-closing .kicker{color:#e9bd72}.brand-closing h2 em{font-weight:400;color:#e9bd72}.brand-closing :focus-visible{outline-color:#e9bd72}
+  /* Mobile: ne jamais laisser le panneau voyage elargir la grille. */
+  .next-grid,.next-heading,.trip-ticket{min-width:0;max-width:100%;}
+  .next-grid{grid-template-columns:minmax(0,1fr);}
+  .next-heading>p:not(.kicker){overflow-wrap:anywhere;}
+  .ticket-payment,.ticket-payment span{white-space:normal;overflow-wrap:anywhere;}
+  .trip-ticket dl>div{min-width:0;}
+  .trip-ticket dd{min-width:0;overflow-wrap:anywhere;}
+  .route-tags{min-width:0;}
+  @media(max-width:39.99rem){
+    .next-heading h2{font-size:clamp(2.3rem,10vw,3.5rem);}
+    .next-grid{gap:1.75rem;}
+    .route-tags{gap:.4rem;font-size:.72rem;}
+    .route-tags span:nth-child(odd){padding:.35rem .65rem;}
+    .trip-ticket{padding:1.25rem;}
+    .trip-ticket dl>div{display:grid;grid-template-columns:minmax(0,6rem) minmax(0,1fr);align-items:start;gap:.6rem;}
+    .ticket-price strong{font-size:clamp(2rem,11vw,2.7rem);}
+    .ticket-payment{font-size:.84rem;line-height:1.5;}
+  }
   @media(min-width:64rem){.next-veil{background:linear-gradient(100deg,rgb(21 37 32 / .9) 0%,rgb(21 37 32 / .72) 38%,rgb(21 37 32 / .35) 66%,rgb(21 37 32 / .2) 100%)}.brand-hero{grid-template-columns:1.25fr 1fr;gap:4rem}.desktop-break{display:block}.travel-poster{min-height:39rem}.poster-title{font-size:6.2rem}.poster-art{margin-top:-4rem}.brand-pillars{grid-template-columns:repeat(3,1fr);gap:2.5rem}.next-grid{grid-template-columns:1fr 1fr;gap:6rem}.founder-note{grid-template-columns:.75fr 1.25fr;gap:5rem}.founder-portrait{margin-inline:0}}
   @media(min-width:40rem) and (max-width:63.99rem){.brand-pillars{grid-template-columns:repeat(3,1fr);gap:1.25rem}.brand-pillars p{font-size:.92rem}}
   @media(max-width:30rem){.brand-actions .btn{width:100%;font-size:.82rem;padding-inline:1rem}.brand-trio{gap:.5rem}.brand-trio li{padding:.8rem .7rem;gap:.5rem}.trio-icon{width:2.2rem;height:2.2rem}.trio-word{font-size:1.12rem}.travel-poster{min-height:31rem;box-shadow:8px 12px 0 #e8ddcc}.poster-top{font-size:.56rem;padding:0}.poster-title{font-size:4.8rem}.trip-ticket dl>div{gap:.7rem}}
