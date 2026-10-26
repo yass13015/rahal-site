@@ -15,7 +15,7 @@ const { title, seo, paragraphs } = Astro.props;
     <div class="container">
       <h1 class="h-serif legal__title">{title}</h1>
       <div class="prose legal__body">
-        {paragraphs.map((p) => <p>{p}</p>)}
+        {paragraphs.map((p) => p.startsWith('## ') ? <h2>{p.slice(3)}</h2> : <p>{p}</p>)}
         <slot />
       </div>
     </div>
@@ -29,5 +29,12 @@ const { title, seo, paragraphs } = Astro.props;
 
   .legal__body {
     color: var(--c-encre);
+  }
+
+  .legal__body h2 {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    font-size: clamp(1.25rem, 2.5vw, 1.55rem);
+    font-weight: 700;
   }
 </style>
