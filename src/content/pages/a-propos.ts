@@ -57,9 +57,8 @@ export const aPropos = {
       title: 'Parce qu’on ose plus à plusieurs.',
       text: "Un entraînement difficile passe mieux quand on le vit ensemble. Les expériences RAHAL se vivent en petit groupe : assez petit pour que chacun compte, assez grand pour que l’aventure soit partagée.",
       image: {
-        src: 'chine/compagnons.jpg',
-        alt: 'Deux élèves en tenue grise traversent une passerelle en bois au pied d’une cascade, près de l’école de kung fu.',
-        position: 'center 74%',
+        src: 'yassine/chine-3.jpg',
+        alt: 'Un compagnon de route avance sur la Grande Muraille vers une tour de guet, sous un ciel bleu.',
         mobilePosition: 'center 65%',
       },
     },
