@@ -1,0 +1,895 @@
+---
+/**
+ * Demande d'inscription en plusieurs étapes, inspirée du formulaire Tally, envoyée par email via FormSubmit.
+ * Sans JavaScript (ou si le script ne se charge pas) : toutes les étapes à la suite, envoi classique.
+ * Avec JavaScript (src/scripts/registration-form.ts) : une étape à la fois, validation en place,
+ * récapitulatif avant envoi, envoi AJAX, panneau de succès ou d'erreur avec solutions de repli.
+ */
+import Arrow from '../Arrow.astro';
+import BrandMark from '../BrandMark.astro';
+import Photo from '../Photo.astro';
+import RegistrationField from './RegistrationField.astro';
+import { site } from '@/content/site';
+import type { Experience, ImageRef, Registration, RegistrationField as Field } from '@/content/types';
+
+interface Props {
+  experience: Experience;
+  registration: Registration;
+  /** Photo affichée en tête du message de confirmation. */
+  successImage?: ImageRef;
+}
+const { experience: exp, registration: reg, successImage } = Astro.props;
+
+const inbox = site.forms.email;
+const steps = reg.steps;
+const lastIndex = steps.length - 1;
+const tripHref = `/experiences/${exp.slug}`;
+const mailto = `mailto:${inbox}?subject=${encodeURIComponent(reg.subject)}`;
+
+/** Sépare le dernier mot d'un titre pour le mettre en italique (« Ton <em>voyage</em> »). */
+const splitTitle = (title: string): [string, string] => {
+  const i = title.lastIndexOf(' ');
+  return i === -1 ? ['', title] : [title.slice(0, i + 1), title.slice(i + 1)];
+};
+const fieldId = (stepId: string, i: number) => `reg-${stepId}-${i + 1}`;
+const fieldKey = (stepId: string, i: number) => `${stepId}-${i + 1}`;
+// Dans le récapitulatif : le nom lisible du champ, sauf pour les noms techniques (ex. « email »).
+const recapLabel = (f: Field) => (/^[a-z_]+$/.test(f.name) ? f.label : f.name);
+const nextSteps = (exp.applicationSteps ?? []).map((s) => s.title.replace(/\.$/, ''));
+---
+
+<div class="reg" data-reg-root>
+  <form
+    class="reg__form"
+    method="post"
+ action="https://formspree.io/f/mwlllnvn"
+data-endpoint="https://formspree.io/f/mwlllnvn"
+    data-subject={reg.subject}
+  >
+    <input type="hidden" name="_subject" value={reg.subject} />
+    <input type="hidden" name="_template" value="table" />
+    <div class="honeypot" aria-hidden="true">
+      <label>Ne pas remplir <input type="text" name="_honey" tabindex="-1" autocomplete="off" /></label>
+    </div>
+
+    {/* Progression (affichée seulement avec JavaScript) */}
+    <div class="reg__progress">
+      <p class="reg__count"><span data-count>Étape 1 sur {steps.length}</span></p>
+      <div class="reg__bar" aria-hidden="true">
+        <span class="reg__bar-fill" data-bar style={`--progress:${1 / steps.length}`}></span>
+      </div>
+      <ol class="reg__stepper" role="list" aria-label="Étapes de la demande" data-stepper>
+        {
+          steps.map((step, i) => (
+            <li class:list={['reg__stepper-item', { 'is-current': i === 0 }]}>
+              <button
+                type="button"
+                class="reg__stepper-btn"
+                data-goto={i}
+                aria-current={i === 0 ? 'step' : undefined}
+                disabled={i > 0}
+              >
+                <span class="reg__stepper-num" aria-hidden="true">
+                  <span>{i + 1}</span>
+                  <svg viewBox="0 0 16 16" focusable="false">
+                    <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span class="reg__stepper-label">{step.title}</span>
+                <span class="visually-hidden" data-step-state>
+                  {i === 0 ? ' (étape en cours)' : ' (à venir)'}
+                </span>
+              </button>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+
+    <div class="reg__inner">
+      <p class="reg__required">Les champs marqués d’un <span class="reg__star">*</span> sont obligatoires.</p>
+
+      {
+        steps.map((step, s) => {
+          const [head, last] = splitTitle(step.title);
+          return (
+            <fieldset
+              class="reg__step"
+              id={`reg-etape-${step.id}`}
+              data-step={s}
+              aria-describedby={step.text ? `reg-etape-${step.id}-texte` : undefined}
+            >
+              <legend class="reg__legend">
+                <span class="reg__legend-kicker">
+                  Étape {s + 1} sur {steps.length}
+                </span>
+                <h2 class="reg__title" tabindex="-1" data-step-title>
+                  {head}
+                  <em>{last}</em>
+                </h2>
+              </legend>
+              {step.text && (
+                <p class="reg__step-text" id={`reg-etape-${step.id}-texte`}>
+                  {step.text}
+                </p>
+              )}
+              <div class="reg__fields">
+                {step.fields.map((field, i) => (
+                  <RegistrationField field={field} id={fieldId(step.id, i)} fieldKey={fieldKey(step.id, i)} />
+                ))}
+              </div>
+            </fieldset>
+          );
+        })
+      }
+
+      {/* Récapitulatif des réponses (dernière étape, rempli par le script) */}
+      <section class="reg__recap" aria-labelledby="reg-recap-titre" data-recap-panel hidden>
+        <h3 class="reg__recap-title" id="reg-recap-titre">Vérifie tes <em>réponses</em></h3>
+        {
+          steps.slice(0, lastIndex).map((step, s) => (
+            <div class="reg__recap-group">
+              <div class="reg__recap-head">
+                <h4>{step.title}</h4>
+                <button type="button" class="reg__edit" data-goto={s}>
+                  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path d="M10.6 2.6l2.8 2.8M3 13l.7-3.5L10.6 2.6l2.8 2.8-6.9 6.9L3 13z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                  </svg>
+                  Modifier<span class="visually-hidden"> la partie {step.title}</span>
+                </button>
+              </div>
+              <dl class="reg__recap-list">
+                {step.fields.map((field, i) => (
+                  <div>
+                    <dt>{recapLabel(field)}</dt>
+                    <dd data-recap={fieldKey(step.id, i)}>Non renseigné</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))
+        }
+      </section>
+
+      <div class="reg__actions">
+        <button type="button" class="btn btn--ghost reg__prev" data-prev>
+          <span aria-hidden="true">←</span>
+          <span class="reg__prev-label">Retour</span>
+        </button>
+        <button type="button" class="btn reg__primary" data-next>
+          Continuer
+          <Arrow />
+        </button>
+        <button type="submit" class="btn reg__primary reg__submit" data-submit>
+          <span data-submit-label>Envoyer ma demande</span>
+          <Arrow />
+        </button>
+      </div>
+
+      <p class="reg__privacy" data-privacy>
+        Tes réponses sont transmises via Formspree pour examiner ta demande et organiser l’expérience. Évite d’indiquer des informations médicales détaillées dans le champ facultatif.
+      </p>
+
+      {/* Échec de l'envoi : les réponses restent sur la page, trois solutions sont proposées. */}
+      <div class="reg__error" data-error-panel hidden>
+        <p class="reg__error-title" role="alert" data-error-message></p>
+        <p class="reg__error-text">
+          Tu peux réessayer dans un instant{reg.fallbackUrl ? ', utiliser notre formulaire de secours' : ''} ou nous écrire
+          directement à <a href={mailto}>{inbox}</a>.
+        </p>
+        <div class="reg__error-actions">
+          <button type="button" class="btn reg__retry" data-retry>Réessayer</button>
+          {
+            reg.fallbackUrl && (
+              <a class="btn btn--ghost reg__fallback" href={reg.fallbackUrl} target="_blank" rel="noopener">
+                Utiliser le formulaire de secours
+                <span class="visually-hidden"> (nouvel onglet)</span>
+              </a>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </form>
+
+  {/* Confirmation, affichée uniquement si FormSubmit confirme la réception */}
+  <div class="reg__success" data-success hidden>
+    {
+      successImage && (
+        <div class="reg__success-media">
+          <Photo image={successImage} ratio="16 / 7" mobileRatio="16 / 9" sizes="(min-width: 64rem) 46rem, calc(100vw - 2.5rem)" />
+        </div>
+      )
+    }
+    <div class="reg__success-body">
+      <p class="kicker" data-success-name>Merci</p>
+      <h2 class="reg__success-title" tabindex="-1" data-success-title>{reg.success.title}</h2>
+      <div class="reg__success-text">
+        {reg.success.text.map((p) => <p>{p}</p>)}
+      </div>
+      {
+        nextSteps.length > 0 && (
+          <ol class="reg__next" role="list" aria-label="Les étapes de ton inscription">
+            {nextSteps.map((title, i) => (
+              <li class:list={{ 'is-done': i === 0 }}>
+                <span class="reg__next-num" aria-hidden="true">
+                  {i === 0 ? (
+                    <svg viewBox="0 0 16 16" focusable="false">
+                      <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  ) : (
+                    i + 1
+                  )}
+                </span>
+                <span>
+                  {title}
+                  {i === 0 && <span class="visually-hidden"> (fait)</span>}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+      <p class="reg__sign">
+        <span>À bientôt,</span>
+        <strong>RAHAL <BrandMark height={26} /></strong>
+      </p>
+      <a class="btn reg__primary" href={tripHref}>
+        Retour au voyage
+        <Arrow />
+      </a>
+    </div>
+  </div>
+
+  <p class="visually-hidden" aria-live="polite" data-announce></p>
+</div>
+
+{/* Repli : si le script du formulaire ne s'est pas chargé, toutes les étapes redeviennent visibles. */}
+<script is:inline>
+  window.addEventListener('load', function () {
+    document.querySelectorAll('[data-reg-root]').forEach(function (root) {
+      if (!root.hasAttribute('data-enhanced')) root.setAttribute('data-fallback', '');
+    });
+  });
+</script>
+
+<script>
+  import { initRegistrationForm } from '@/scripts/registration-form';
+  initRegistrationForm();
+</script>
+
+<style>
+  .reg {
+    --reg-pad: clamp(1.25rem, 3.6vw, 2.4rem);
+    position: relative;
+    border: 1px solid var(--c-sable-3);
+    border-radius: var(--r-l);
+    background: #fcfaf6;
+    box-shadow: var(--shadow-m);
+    overflow: hidden;
+    container-type: inline-size;
+  }
+
+  .reg [hidden],
+  .reg[hidden] {
+    display: none !important;
+  }
+
+  /* --- États d'affichage ----------------------------------------------------
+     Sans JavaScript (ou en repli) : toutes les étapes à la suite, envoi classique.
+     Avec JavaScript : progression visible, une seule étape à la fois. */
+  .reg__progress,
+  .reg__prev,
+  .reg__primary[data-next] {
+    display: none;
+  }
+
+  :global(html.js) .reg:not([data-fallback]) .reg__progress {
+    display: block;
+  }
+
+  :global(html.js) .reg:not([data-fallback]) .reg__prev,
+  :global(html.js) .reg:not([data-fallback]) .reg__primary[data-next] {
+    display: inline-flex;
+  }
+
+  :global(html.js) .reg:not([data-fallback]) .reg__legend-kicker {
+    display: none;
+  }
+
+  /* Avant l'initialisation du script : uniquement la première étape, pour éviter un saut de mise en page. */
+  :global(html.js) .reg:not([data-enhanced]):not([data-fallback]) .reg__step:not([data-step='0']),
+  :global(html.js) .reg:not([data-enhanced]):not([data-fallback]) .reg__prev,
+  :global(html.js) .reg:not([data-enhanced]):not([data-fallback]) .reg__submit,
+  :global(html.js) .reg:not([data-enhanced]):not([data-fallback]) .reg__privacy {
+    display: none;
+  }
+
+  /* --- Progression ---------------------------------------------------------- */
+  .reg__progress {
+    padding: 1.1rem var(--reg-pad) 1rem;
+    background: var(--c-sable-2);
+    border-bottom: 1px solid var(--c-sable-3);
+  }
+
+  .reg__count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--c-brun);
+  }
+
+  .reg__bar {
+    height: 4px;
+    margin: 0.65rem 0 0.9rem;
+    border-radius: 4px;
+    background: var(--c-sable-3);
+    overflow: hidden;
+  }
+
+  .reg__bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--c-foret), #3d6356 60%, var(--c-or));
+    transform: scaleX(var(--progress, 0.33));
+    transform-origin: left;
+    transition: transform var(--t-base) var(--ease-out);
+  }
+
+  .reg__stepper {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.5rem;
+    list-style: none;
+  }
+
+  .reg__stepper-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: var(--r-s);
+    background: none;
+    color: var(--c-gris);
+    font-size: 0.74rem;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .reg__stepper-btn:disabled {
+    cursor: default;
+  }
+
+  .reg__stepper-btn:not(:disabled):not([aria-current]):hover .reg__stepper-label {
+    color: var(--c-encre);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .reg__stepper-num {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.7rem;
+    height: 1.7rem;
+    border: 1.5px solid var(--c-sable-3);
+    border-radius: 50%;
+    background: #fcfaf6;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--c-gris);
+    transition:
+      background-color var(--t-fast) var(--ease-out),
+      border-color var(--t-fast) var(--ease-out),
+      color var(--t-fast) var(--ease-out);
+  }
+
+  .reg__stepper-num svg {
+    display: none;
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  .is-current .reg__stepper-btn {
+    color: var(--c-encre);
+  }
+
+  .is-current .reg__stepper-num {
+    border-color: var(--c-foret);
+    background: var(--c-foret);
+    color: var(--c-ivoire);
+  }
+
+  .is-done .reg__stepper-btn {
+    color: var(--c-encre);
+  }
+
+  .is-done .reg__stepper-num {
+    border-color: var(--c-or);
+    background: var(--c-or);
+    color: var(--c-encre);
+  }
+
+  .is-done .reg__stepper-num span {
+    display: none;
+  }
+
+  .is-done .reg__stepper-num svg {
+    display: block;
+  }
+
+  @container (min-width: 32rem) {
+    .reg__stepper-btn {
+      flex-direction: row;
+      gap: 0.55rem;
+      text-align: left;
+      font-size: 0.82rem;
+    }
+  }
+
+  /* --- Étapes ------------------------------------------------------------------ */
+  .reg__inner {
+    display: grid;
+    gap: 1.5rem;
+    padding: var(--reg-pad);
+  }
+
+  .reg__required {
+    font-size: 0.82rem;
+    color: var(--c-gris);
+  }
+
+  .reg__star {
+    color: var(--c-brun-2);
+    font-weight: 700;
+  }
+
+  .reg__step {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  :global(html.js) .reg[data-enhanced] .reg__step:not([hidden]) {
+    animation: reg-step-in var(--t-base) var(--ease-out);
+  }
+
+  /* Sans JavaScript, les étapes se suivent : un filet les sépare. */
+  .reg__step + .reg__step {
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--c-sable-3);
+  }
+
+  :global(html.js) .reg:not([data-fallback]) .reg__step + .reg__step {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .reg__legend {
+    display: grid;
+    gap: 0.35rem;
+    width: 100%;
+    padding: 0;
+    margin-bottom: 0.4rem;
+  }
+
+  .reg__legend-kicker {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--c-brun);
+  }
+
+  .reg__title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: clamp(1.85rem, 3.4vw, 2.45rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  .reg__title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--c-brun-2);
+  }
+
+  .reg__title:focus {
+    outline: none;
+  }
+
+  .reg__step-text {
+    max-width: 38rem;
+    margin-bottom: 1.4rem;
+    color: var(--c-gris);
+    font-size: 0.98rem;
+    text-wrap: pretty;
+  }
+
+  .reg__fields {
+    display: grid;
+    gap: 1.35rem 1rem;
+  }
+
+  @container (min-width: 34rem) {
+    .reg__fields {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @keyframes reg-step-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* --- Récapitulatif ------------------------------------------------------- */
+  .reg__recap {
+    display: grid;
+    gap: 1rem;
+    padding: clamp(1.1rem, 3vw, 1.6rem);
+    border: 1px solid var(--c-sable-3);
+    border-radius: var(--r-m);
+    background: var(--c-sable-2);
+  }
+
+  .reg__recap-title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 1.7rem;
+    line-height: 1.1;
+  }
+
+  .reg__recap-title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--c-brun-2);
+  }
+
+  .reg__recap-group {
+    display: grid;
+    gap: 0.6rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--c-sable-3);
+  }
+
+  .reg__recap-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .reg__recap-head h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .reg__edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.25rem;
+    padding: 0.3rem 0.85rem;
+    border: 1px solid var(--c-sable-3);
+    border-radius: var(--r-pill);
+    background: #fcfaf6;
+    color: var(--c-brun-2);
+    font-size: 0.82rem;
+    font-weight: 700;
+    transition:
+      border-color var(--t-fast) var(--ease-out),
+      background-color var(--t-fast) var(--ease-out);
+  }
+
+  .reg__edit:hover {
+    border-color: var(--c-brun-2);
+    background: #fff;
+  }
+
+  .reg__edit svg {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  .reg__recap-list {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+  }
+
+  .reg__recap-list > div {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .reg__recap-list dt {
+    font-size: 0.8rem;
+    color: var(--c-gris);
+  }
+
+  .reg__recap-list dd {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .reg__recap-list dd.is-empty {
+    font-weight: 500;
+    font-style: italic;
+    color: var(--c-gris);
+  }
+
+  @container (min-width: 34rem) {
+    .reg__recap-list > div {
+      grid-template-columns: minmax(9rem, 14rem) 1fr;
+      gap: 1rem;
+      align-items: baseline;
+    }
+  }
+
+  /* --- Actions ------------------------------------------------------------- */
+  .reg__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--c-sable-3);
+  }
+
+  .reg__prev {
+    --btn-border: var(--c-sable-3);
+    position: relative;
+    gap: 0.45rem;
+  }
+
+  /* Carte étroite : « Retour » réduit à sa flèche (nom accessible conservé) pour garder les boutons sur une ligne. */
+  @container (max-width: 26rem) {
+    .reg__prev {
+      width: 3.125rem;
+      padding-inline: 0;
+    }
+
+    .reg__prev-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  .reg__primary {
+    --btn-bg: var(--c-foret);
+    --btn-border: var(--c-foret);
+    --btn-fg: var(--c-ivoire);
+    flex: 1 1 9rem;
+    margin-left: auto;
+  }
+
+  .reg__primary:hover {
+    --btn-bg: #2f5247;
+    --btn-border: #2f5247;
+  }
+
+  @container (min-width: 34rem) {
+    .reg__primary {
+      flex: 0 0 auto;
+      min-width: 13rem;
+    }
+  }
+
+  /* Indicateur d'envoi */
+  .reg__submit[aria-busy='true'] :global(.btn__arrow) {
+    display: none;
+  }
+
+  .reg__submit[aria-busy='true']::after {
+    content: '';
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgb(247 243 235 / 0.35);
+    border-top-color: var(--c-ivoire);
+    border-radius: 50%;
+    animation: reg-spin 0.8s linear infinite;
+  }
+
+  @keyframes reg-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .reg__privacy {
+    margin-top: -0.6rem;
+    font-size: 0.82rem;
+    color: var(--c-gris);
+    text-wrap: pretty;
+  }
+
+  .reg__privacy a {
+    color: var(--c-encre);
+    font-weight: 600;
+  }
+
+  /* --- Échec de l'envoi ---------------------------------------------------- */
+  .reg__error {
+    display: grid;
+    gap: 0.6rem;
+    padding: 1.1rem 1.2rem;
+    border: 1px solid #e6c4bb;
+    border-radius: var(--r-m);
+    background: #f6e4df;
+    color: #6d2a1b;
+  }
+
+  .reg__error-title {
+    font-weight: 700;
+  }
+
+  .reg__error-title:empty {
+    display: none;
+  }
+
+  .reg__error-text {
+    font-size: 0.92rem;
+  }
+
+  .reg__error-text a {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+
+  .reg__error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.2rem;
+  }
+
+  .reg__fallback {
+    --btn-fg: #6d2a1b;
+    --btn-border: #c99a8d;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .reg__fallback:hover {
+    --btn-bg: #6d2a1b;
+    --btn-fg: var(--c-ivoire);
+    --btn-border: #6d2a1b;
+  }
+
+  /* --- Confirmation -------------------------------------------------------- */
+  .reg__success {
+    display: grid;
+    animation: reg-step-in var(--t-base) var(--ease-out);
+  }
+
+  .reg__success-media :global(.photo__frame) {
+    border-radius: 0;
+  }
+
+  .reg__success-body {
+    display: grid;
+    gap: 1rem;
+    justify-items: start;
+    padding: var(--reg-pad);
+  }
+
+  .reg__success-title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .reg__success-title:focus {
+    outline: none;
+  }
+
+  .reg__success-text {
+    display: grid;
+    gap: 0.6rem;
+    max-width: 38rem;
+    color: var(--c-gris);
+  }
+
+  .reg__next {
+    display: grid;
+    gap: 0.5rem;
+    width: 100%;
+    margin-block: 0.25rem;
+    padding: 1rem 1.1rem;
+    list-style: none;
+    border: 1px solid var(--c-sable-3);
+    border-radius: var(--r-m);
+    background: var(--c-sable-2);
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  .reg__next li {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+
+  .reg__next-num {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.6rem;
+    height: 1.6rem;
+    border: 1.5px solid var(--c-sable-3);
+    border-radius: 50%;
+    background: #fcfaf6;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--c-gris);
+  }
+
+  .reg__next .is-done .reg__next-num {
+    border-color: var(--c-foret);
+    background: var(--c-foret);
+    color: var(--c-ivoire);
+  }
+
+  .reg__next-num svg {
+    width: 0.85rem;
+    height: 0.85rem;
+  }
+
+  @container (min-width: 36rem) {
+    .reg__next {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+  }
+
+  .reg__sign {
+    display: grid;
+    gap: 0.1rem;
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    font-style: italic;
+    line-height: 1.2;
+  }
+
+  .reg__sign strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-sans);
+    font-style: normal;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+  }
+
+  .reg__success .reg__primary {
+    flex: none;
+    margin-left: 0;
+  }
+</style>

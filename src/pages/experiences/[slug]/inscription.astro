@@ -1,0 +1,693 @@
+---
+/**
+ * Demande d'inscription intégrée au site : /experiences/<slug>/inscription.
+ * Générée pour chaque expérience publiée qui a un formulaire (`registration`).
+ * Ordinateur : récapitulatif du voyage collant à gauche, formulaire à droite. Mobile : récapitulatif compact au-dessus.
+ */
+import { getImage, Image } from 'astro:assets';
+import Base from '@/layouts/Base.astro';
+import Arrow from '@/components/Arrow.astro';
+import Photo from '@/components/Photo.astro';
+import StatusPill from '@/components/StatusPill.astro';
+import Topo from '@/components/Topo.astro';
+import RegistrationForm from '@/components/forms/RegistrationForm.astro';
+import { experiences } from '@/content/experiences';
+import { site } from '@/content/site';
+import type { Experience, ImageRef, Registration } from '@/content/types';
+import { resolveImage } from '@/lib/images';
+
+export function getStaticPaths() {
+  return experiences.flatMap((exp) =>
+    exp.registration ? [{ params: { slug: exp.slug }, props: { experience: exp, registration: exp.registration } }] : [],
+  );
+}
+
+interface Props {
+  experience: Experience;
+  registration: Registration;
+}
+const { experience: exp, registration: reg } = Astro.props;
+
+// Photos propres à chaque voyage ; à défaut, celles de la fiche du voyage.
+const visuals: Record<string, { summary: ImageRef; backdrop: ImageRef; success: ImageRef }> = {
+  chine: {
+    summary: {
+      src: 'chine/escaliers-temple.jpg',
+      alt: 'Yassine, de dos en tenue grise, monte le grand escalier d’un temple aux murs rouges.',
+      position: 'center 70%',
+      mobilePosition: 'center 72%',
+    },
+    backdrop: { src: 'chine/decouvrir.jpg', alt: '' },
+    // Bandeau panoramique : seul le portique est cadré (le voyageur, plus bas dans la photo, n'apparaît pas).
+    success: {
+      src: 'chine/porte-shaolin.jpg',
+      alt: 'Un portique chinois aux toits dorés, éclairé au crépuscule sous un ciel bleu profond.',
+      position: 'center 33%',
+      mobilePosition: 'center 38%',
+    },
+  },
+};
+const visual = visuals[exp.slug] ?? { summary: exp.card, backdrop: exp.hero, success: exp.card };
+const backdrop = resolveImage(visual.backdrop.src);
+
+const heroMeta = resolveImage(exp.hero.src);
+const ogImage = heroMeta ? (await getImage({ src: heroMeta, width: 1200, height: 630, format: 'jpg', layout: 'none' })).src : undefined;
+
+/** Sépare le dernier mot du titre pour le mettre en italique. */
+const splitIndex = reg.title.lastIndexOf(' ');
+const [titleHead, titleLast] = splitIndex === -1 ? ['', reg.title] : [reg.title.slice(0, splitIndex + 1), reg.title.slice(splitIndex + 1)];
+
+const tripHref = `/experiences/${exp.slug}`;
+const applicationSteps = (exp.applicationSteps ?? []).map((s) => s.title.replace(/\.$/, ''));
+// Itinéraire tiré des étapes du programme : « 8–10 janvier · Pékin » → date + lieu.
+const stops = (exp.programme?.steps ?? []).flatMap((step) => {
+  const parts = step.kicker?.split(' · ') ?? [];
+  return parts.length >= 2 ? [{ when: parts[0].trim(), place: parts.slice(1).join(' · ').trim() }] : [];
+});
+const priceNotes = (exp.priceNote ?? '').split(' · ').filter(Boolean);
+---
+
+<Base
+  title={`${reg.title} · ${exp.country} — ${site.name}`}
+  description={reg.intro}
+  ogImage={ogImage}
+  ogImageAlt={exp.hero.alt}
+>
+  <section class="rhero on-dark" aria-labelledby="inscription-titre">
+    {
+      backdrop && (
+        <div class="rhero__media" aria-hidden="true">
+          <Image src={backdrop} alt="" sizes="(min-width: 64rem) 55vw, 100vw" loading="eager" decoding="async" />
+        </div>
+      )
+    }
+    <Topo class="rhero__topo" />
+    <div class="container rhero__inner">
+      <a class="rhero__back" href={tripHref}><span aria-hidden="true">←</span> Retour au voyage</a>
+      <p class="kicker">{exp.name} · {exp.country}</p>
+      <h1 class="rhero__title" id="inscription-titre">
+        {titleHead}<em>{titleLast}</em>
+      </h1>
+      <p class="rhero__intro">{reg.intro}</p>
+      {
+        applicationSteps.length > 0 && (
+          <ol class="rhero__steps" role="list" aria-label="Comment se passe l’inscription">
+            {applicationSteps.map((title, i) => (
+              <li>
+                <span class="rhero__step-num" aria-hidden="true">
+                  {i + 1}
+                </span>
+                {title}
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </div>
+  </section>
+
+  <section class="rbody" aria-label="Formulaire de demande d’inscription">
+    <Topo class="rbody__topo" />
+    <div class="container rbody__grid">
+      <aside class="trip on-dark" aria-labelledby="trip-titre">
+        <div class="trip__media">
+          <Photo
+            image={visual.summary}
+            ratio="4 / 3"
+            mobileRatio="1 / 1"
+            priority
+            sizes="(min-width: 80rem) 23rem, (min-width: 64rem) 21rem, 8rem"
+          />
+          <StatusPill status={exp.status} class="trip__pill" />
+        </div>
+        <div class="trip__body">
+          <h2 class="trip__label" id="trip-titre">Ton voyage · {exp.country}</h2>
+          {
+            exp.dates && (
+              <p class="trip__dates">
+                <strong>{exp.dates}</strong>
+                {exp.datesNote && <span>{exp.datesNote}</span>}
+              </p>
+            )
+          }
+          {
+            (exp.duration || exp.groupSize) && (
+              <dl class="trip__facts">
+                {exp.duration && (
+                  <div>
+                    <dt>Durée</dt>
+                    <dd>{exp.duration}</dd>
+                  </div>
+                )}
+                {exp.groupSize && (
+                  <div>
+                    <dt>Groupe</dt>
+                    <dd>{exp.groupSize}</dd>
+                  </div>
+                )}
+              </dl>
+            )
+          }
+          {
+            stops.length > 0 && (
+              <div class="trip__route-block">
+                <p class="trip__route-label">Itinéraire</p>
+                <ol class="trip__route" role="list">
+                  {stops.map((stop) => (
+                    <li>
+                      <span class="trip__place">{stop.place}</span>
+                      <span class="trip__when">{stop.when}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )
+          }
+          {
+            exp.price && (
+              <p class="trip__price">
+                <strong>{exp.price}</strong>
+                {priceNotes.map((note) => (
+                  <span>{note}</span>
+                ))}
+              </p>
+            )
+          }
+          <a class="trip__link" href={`${tripHref}#etapes`} target="_blank" rel="noopener">
+            Revoir le programme<span class="visually-hidden"> (nouvel onglet)</span>
+            <Arrow class="trip__arrow" />
+          </a>
+        </div>
+      </aside>
+
+      <div class="rbody__main">
+        <RegistrationForm experience={exp} registration={reg} successImage={visual.success} />
+        <p class="rbody__help">
+          Une question avant d’envoyer&nbsp;? Écris-nous à <a href={`mailto:${site.contact.email}`}>{site.contact.email}</a> ou
+          consulte la <a href="/faq-contact">FAQ</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* --- En-tête : vert forêt, photo de la Grande Muraille sous un voile ---- */
+  .rhero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--c-foret-2) 0%, var(--c-foret) 100%);
+    color: var(--c-ivoire);
+    padding-block: clamp(1.75rem, 4vw, 2.75rem) clamp(3.75rem, 8vw, 6rem);
+  }
+
+  .rhero__media {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+  }
+
+  .rhero__media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 18% center;
+  }
+
+  /* Mobile : voile dense sur toute la photo (texte ivoire toujours lisible). */
+  .rhero__media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgb(27 48 41 / 0.86) 0%, rgb(27 48 41 / 0.78) 100%);
+  }
+
+  .rhero :global(.rhero__topo) {
+    z-index: -1;
+    --topo-color: var(--c-or-clair);
+    --topo-opacity: 0.1;
+  }
+
+  .rhero__inner {
+    display: grid;
+    gap: 0.85rem;
+    justify-items: start;
+  }
+
+  .rhero__back {
+    display: inline-flex;
+    gap: 0.45rem;
+    padding-block: 0.2rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-sable);
+    text-decoration: none;
+  }
+
+  .rhero__back:hover {
+    color: var(--c-ivoire);
+    text-decoration: underline;
+    text-decoration-color: var(--c-or-clair);
+  }
+
+  .rhero .kicker {
+    color: var(--c-or-clair);
+  }
+
+  .rhero__title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: clamp(2.6rem, 5vw, 4.1rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .rhero__title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--c-or-clair);
+  }
+
+  .rhero__intro {
+    max-width: 36rem;
+    color: var(--c-sable);
+    font-size: clamp(1rem, 1.3vw, 1.1rem);
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+
+  /* Les trois temps de l'inscription (masqués sur mobile pour garder le formulaire proche). */
+  .rhero__steps {
+    display: none;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+    list-style: none;
+  }
+
+  .rhero__steps li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.35rem 0.9rem 0.35rem 0.4rem;
+    border: 1px solid rgb(233 189 114 / 0.38);
+    border-radius: var(--r-pill);
+    background: rgb(247 243 235 / 0.07);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .rhero__step-num {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--c-or-clair);
+    color: var(--c-encre);
+    font-size: 0.72rem;
+    font-weight: 800;
+  }
+
+  @media (min-width: 48rem) {
+    .rhero__steps {
+      display: flex;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .rhero__inner > * {
+      max-width: 34rem;
+    }
+
+    .rhero__inner > .rhero__title {
+      max-width: 42rem;
+    }
+
+    /* Ordinateur : la photo occupe la moitié droite et se fond dans le vert. */
+    .rhero__media {
+      left: 50%;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 50%);
+      mask-image: linear-gradient(90deg, transparent 0%, #000 50%);
+    }
+
+    .rhero__media :global(img) {
+      object-position: center 58%;
+    }
+
+    .rhero__media::after {
+      background: linear-gradient(180deg, rgb(27 48 41 / 0.35) 0%, rgb(27 48 41 / 0.55) 100%);
+    }
+  }
+
+  /* --- Corps : dégradé sable, lignes topographiques très légères ----------- */
+  .rbody {
+    position: relative;
+    isolation: isolate;
+    display: flow-root; /* la marge négative de la grille chevauche l'en-tête sans entraîner le fond sable */
+    padding-bottom: clamp(3rem, 6vw, 5rem);
+    background: linear-gradient(180deg, var(--c-sable) 0, var(--c-sable-2) 28rem, var(--c-ivoire) 100%);
+  }
+
+  .rbody :global(.rbody__topo) {
+    z-index: -1;
+    --topo-color: var(--c-brun);
+    --topo-opacity: 0.07;
+  }
+
+  .rbody__grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: -2.25rem;
+  }
+
+  .rbody__main {
+    display: grid;
+    gap: 1.1rem;
+    min-width: 0;
+  }
+
+  .rbody__help {
+    text-align: center;
+    font-size: 0.88rem;
+    color: var(--c-gris);
+    text-wrap: balance;
+  }
+
+  .rbody__help a {
+    color: var(--c-encre);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  /* --- Récapitulatif du voyage : compact sur mobile ------------------------ */
+  .trip {
+    position: relative;
+    display: grid;
+    grid-template-columns: 5.25rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem;
+    border: 1px solid rgb(233 189 114 / 0.3);
+    border-radius: var(--r-m);
+    background: var(--c-foret);
+    color: var(--c-ivoire);
+    box-shadow: var(--shadow-m);
+  }
+
+  .trip__media {
+    position: relative;
+    align-self: stretch;
+  }
+
+  .trip__media :global(.photo),
+  .trip__media :global(.photo__frame) {
+    height: 100%;
+  }
+
+  .trip__media :global(.photo__frame) {
+    border-radius: var(--r-s);
+    background: var(--c-foret-2);
+  }
+
+  .trip__media :global(.trip__pill) {
+    display: none;
+  }
+
+  /* Vignette : la photo remplit exactement sa colonne (sans ratio imposé, elle débordait sur le texte). */
+  @media (max-width: 63.99rem) {
+    .trip__media {
+      overflow: hidden;
+      border-radius: var(--r-s);
+    }
+
+    .trip__media :global(.photo__frame) {
+      width: 100%;
+      aspect-ratio: auto;
+    }
+  }
+
+  .trip__body {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  .trip__label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-or-clair);
+  }
+
+  .trip__dates {
+    display: grid;
+    gap: 0.05rem;
+    line-height: 1.3;
+  }
+
+  .trip__dates strong {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .trip__dates span {
+    font-size: 0.8rem;
+    color: var(--c-sable);
+  }
+
+  .trip__facts,
+  .trip__route-block {
+    display: none;
+  }
+
+  .trip__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.1rem 0.55rem;
+    line-height: 1.3;
+  }
+
+  .trip__price strong {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .trip__price span {
+    font-size: 0.76rem;
+    color: var(--c-sable);
+  }
+
+  .trip__price span + span::before {
+    content: '· ';
+    content: '· ' / '';
+  }
+
+  .trip__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: fit-content;
+    margin-top: 0.15rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-or-clair);
+    text-underline-offset: 0.25em;
+  }
+
+  .trip__link :global(.trip__arrow) {
+    width: 0.95em;
+    height: 0.95em;
+    transition: transform var(--t-fast) var(--ease-out);
+  }
+
+  .trip__link:hover :global(.trip__arrow) {
+    transform: translateX(3px);
+  }
+
+  @media (min-width: 48rem) {
+    .trip {
+      grid-template-columns: 8rem minmax(0, 1fr);
+      padding: 0.9rem;
+      gap: 1.25rem;
+    }
+  }
+
+  /* --- Ordinateur : deux colonnes, récapitulatif complet --------------------- */
+  @media (min-width: 64rem) {
+    .rbody__grid {
+      grid-template-columns: minmax(0, 21rem) minmax(0, 1fr);
+      gap: clamp(1.75rem, 3vw, 2.75rem);
+      align-items: start;
+      margin-top: -4rem;
+    }
+
+    .trip {
+      display: block;
+      padding: 0;
+      overflow: hidden;
+      border-radius: var(--r-l);
+    }
+
+    .trip__media :global(.photo__frame) {
+      border-radius: 0;
+    }
+
+    .trip__media :global(.trip__pill) {
+      display: inline-flex;
+      position: absolute;
+      top: 0.9rem;
+      left: 0.9rem;
+      box-shadow: var(--shadow-s);
+    }
+
+    .trip__body {
+      gap: 1rem;
+      padding: 1.35rem 1.5rem 1.5rem;
+    }
+
+    .trip__dates strong {
+      font-size: 1.15rem;
+    }
+
+    .trip__dates span {
+      font-size: 0.85rem;
+    }
+
+    .trip__facts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 0;
+      padding-block: 0.85rem;
+      border-block: 1px solid rgb(233 189 114 / 0.22);
+    }
+
+    .trip__facts dt,
+    .trip__route-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--c-or-clair);
+    }
+
+    .trip__facts dd {
+      margin: 0.15rem 0 0;
+      font-weight: 700;
+    }
+
+    .trip__route-block {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .trip__route {
+      position: relative;
+      display: grid;
+      gap: 0.5rem;
+      list-style: none;
+    }
+
+    /* Ligne de l'itinéraire, reliant les étapes */
+    .trip__route::before {
+      content: '';
+      position: absolute;
+      top: 0.55rem;
+      bottom: 0.55rem;
+      left: 0.3rem;
+      width: 1px;
+      background: rgb(233 189 114 / 0.45);
+    }
+
+    .trip__route li {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding-left: 1.3rem;
+    }
+
+    .trip__route li::before {
+      content: '';
+      position: absolute;
+      top: 0.42rem;
+      left: 0;
+      width: 0.62rem;
+      height: 0.62rem;
+      border-radius: 50%;
+      background: var(--c-or-clair);
+      box-shadow: 0 0 0 3px var(--c-foret);
+    }
+
+    .trip__place {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .trip__when {
+      flex: none;
+      font-size: 0.78rem;
+      color: var(--c-sable);
+    }
+
+    .trip__price {
+      display: grid;
+      gap: 0.1rem;
+    }
+
+    .trip__price strong {
+      font-size: 2.1rem;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+    }
+
+    .trip__price span {
+      font-size: 0.85rem;
+    }
+
+    .trip__price span + span::before {
+      content: none;
+    }
+
+    .trip__link {
+      font-size: 0.88rem;
+    }
+  }
+
+  /* Écran peu haut : photo plus panoramique et espacements resserrés, pour que la carte collante tienne en entier. */
+  @media (min-width: 64rem) and (max-height: 58rem) {
+    .trip__media :global(.photo__frame) {
+      aspect-ratio: 16 / 9;
+    }
+
+    .trip__body {
+      gap: 0.75rem;
+      padding-block: 1.1rem 1.25rem;
+    }
+
+    .trip__facts {
+      padding-block: 0.65rem;
+    }
+  }
+
+  /* Collant seulement si l'écran est assez haut pour l'afficher en entier (carte ≈ 46rem au plus, en-tête compris). */
+  @media (min-width: 64rem) and (min-height: 48rem) {
+    .trip {
+      position: sticky;
+      top: calc(var(--header-h) + 1rem);
+    }
+  }
+
+  @media (min-width: 80rem) {
+    .rbody__grid {
+      grid-template-columns: minmax(0, 23rem) minmax(0, 1fr);
+    }
+  }
+</style>

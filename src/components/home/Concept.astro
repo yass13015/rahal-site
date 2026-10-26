@@ -1,0 +1,119 @@
+---
+/** Le concept RAHAL : Apprendre. Essayer. Se dépasser. */
+import { accueil } from '@/content/pages/accueil';
+import Topo from '../Topo.astro';
+
+const { concept } = accueil;
+---
+
+<section class="concept section" aria-labelledby="concept-titre">
+  <Topo class="concept__topo" />
+  <div class="container concept__inner">
+    <div class="concept__head" data-reveal>
+      <p class="kicker">{concept.kicker}</p>
+      <h2 class="h-serif concept__title" id="concept-titre">{concept.title}</h2>
+      <p class="lede">{concept.text}</p>
+    </div>
+
+    <ol class="pillars" role="list">
+      {
+        concept.pillars.map((pillar, i) => (
+          <li class="pillar" data-reveal style={`--reveal-delay:${i * 110}ms`}>
+            <span class="pillar__num" aria-hidden="true">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <div class="pillar__body">
+              <h3 class="pillar__title">{pillar.title}</h3>
+              <p class="pillar__text">{pillar.text}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .concept {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .concept :global(.concept__topo) {
+    --topo-opacity: 0.1;
+    inset: -20% auto auto -25%;
+    width: 80%;
+    height: 120%;
+  }
+
+  .concept__inner {
+    position: relative;
+    display: grid;
+    gap: 3rem;
+  }
+
+  .concept__head {
+    display: grid;
+    gap: 1.25rem;
+    max-width: 36rem;
+    align-content: start;
+  }
+
+  .concept__title {
+    text-wrap: balance;
+  }
+
+
+  .pillars {
+    list-style: none;
+    display: grid;
+    border-top: 1px solid var(--c-sable-3);
+  }
+
+  .pillar {
+    display: grid;
+    grid-template-columns: 3.5rem 1fr;
+    gap: 1rem;
+    padding: 1.6rem 0;
+    border-bottom: 1px solid var(--c-sable-3);
+  }
+
+  .pillar__num {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--c-or);
+    padding-top: 0.15rem;
+  }
+
+  .pillar__body {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .pillar__title {
+    font-weight: 700;
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+  }
+
+  .pillar__text {
+    color: var(--c-gris);
+    max-width: 30rem;
+    text-wrap: pretty;
+  }
+
+  @media (min-width: 64rem) {
+    .concept__inner {
+      grid-template-columns: 1.1fr 1fr;
+      gap: 5rem;
+      align-items: start;
+    }
+
+    .concept__head {
+      position: sticky;
+      top: calc(var(--header-h) + 2rem);
+    }
+  }
+</style>

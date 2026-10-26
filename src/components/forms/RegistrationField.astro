@@ -1,0 +1,320 @@
+---
+/**
+ * Une question du formulaire d'inscription (champ texte, date, choix en cartes, zone de texte ou case à cocher).
+ * Le nom du champ (`field.name`) devient la ligne de l'email reçu.
+ * Les attributs data-* servent au script src/scripts/registration-form.ts (validation, récapitulatif).
+ */
+import type { RegistrationField } from '@/content/types';
+
+interface Props {
+  field: RegistrationField;
+  /** Identifiant de base du champ (unique dans la page). */
+  id: string;
+  /** Clé reliant le champ à sa ligne du récapitulatif. */
+  fieldKey: string;
+}
+const { field, id, fieldKey } = Astro.props;
+
+const hintId = field.hint ? `${id}-aide` : undefined;
+const errorId = `${id}-erreur`;
+const describedBy = [hintId, errorId].filter(Boolean).join(' ');
+const full = field.width !== 'half';
+const required = Boolean(field.required);
+
+// Réponses courtes (ex. Homme / Femme) : cartes côte à côte ; en demi-largeur, l'aide passe sous les cartes pour aligner la ligne.
+const options = field.options ?? [];
+const compact = field.type === 'choice' && options.length > 0 && options.every((o) => o.length <= 14);
+const hintAfter = compact && !full;
+
+// Confort de saisie sur mobile : majuscules automatiques pour les noms, aucune pour les adresses et pseudos.
+const isName = field.autocomplete === 'given-name' || field.autocomplete === 'family-name';
+const isHandle = field.type === 'email' || Boolean(field.placeholder?.startsWith('@'));
+const autocapitalize = isName ? 'words' : isHandle ? 'none' : undefined;
+const spellcheck = isHandle ? 'false' : undefined;
+const inputmode = field.type === 'email' ? 'email' : field.type === 'tel' ? 'tel' : undefined;
+const inputType = field.type === 'email' || field.type === 'tel' || field.type === 'date' ? field.type : 'text';
+
+const data = {
+  'data-field': fieldKey,
+  'data-name': field.name,
+  'data-type': field.type,
+  'data-required': required ? '' : undefined,
+};
+---
+
+{
+  field.type === 'choice' ? (
+    <fieldset class:list={['rf', 'rf--choice', { 'rf--full': full }]} aria-describedby={hintId} {...data}>
+      <legend class="field__label rf__legend">
+        {field.label}{required && <span class="rf__mark">{'\u00a0'}<span class="rf__req" aria-hidden="true">*</span><span class="visually-hidden"> (obligatoire)</span></span>}
+      </legend>
+      {field.hint && !hintAfter && (
+        <p class="field__hint rf__hint" id={hintId}>
+          {field.hint}
+        </p>
+      )}
+      <div class:list={['rf__options', { 'rf__options--compact': compact }]}>
+        {options.map((option, j) => (
+          <label class="choice">
+            <input
+              class="choice__input"
+              type="radio"
+              id={`${id}-${j + 1}`}
+              name={field.name}
+              value={option}
+              required={required}
+              aria-describedby={errorId}
+            />
+            <span class="choice__box">
+              <span class="choice__dot" aria-hidden="true" />
+              <span class="choice__text">{option}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      {field.hint && hintAfter && (
+        <p class="field__hint rf__hint" id={hintId}>
+          {field.hint}
+        </p>
+      )}
+      <p class="field__error" id={errorId} data-error />
+    </fieldset>
+  ) : field.type === 'consent' ? (
+    <div class:list={['rf', 'rf--consent', 'rf--full']} {...data}>
+      <label class="rf__consent" for={id}>
+        <input id={id} type="checkbox" name={field.name} value="Oui" required={required} aria-describedby={errorId} />
+        <span>
+          {field.label}{required && <span class="rf__mark">{'\u00a0'}<span class="rf__req" aria-hidden="true">*</span><span class="visually-hidden"> (obligatoire)</span></span>}
+        </span>
+      </label>
+      <p class="field__error" id={errorId} data-error />
+    </div>
+  ) : (
+    <div class:list={['rf', 'field', { 'rf--full': full }]} {...data}>
+      <label class="field__label" for={id}>
+        {field.label}{required && <span class="rf__mark">{'\u00a0'}<span class="rf__req" aria-hidden="true">*</span><span class="visually-hidden"> (obligatoire)</span></span>}
+      </label>
+      {field.type === 'textarea' ? (
+        <textarea
+          class="input rf__textarea"
+          id={id}
+          name={field.name}
+          rows="4"
+          placeholder={field.placeholder}
+          required={required}
+          aria-describedby={describedBy}
+        />
+      ) : (
+        <input
+          class="input"
+          id={id}
+          name={field.name}
+          type={inputType}
+          placeholder={field.placeholder}
+          autocomplete={field.autocomplete}
+          autocapitalize={autocapitalize}
+          spellcheck={spellcheck}
+          inputmode={inputmode}
+          min={field.type === 'date' ? '1900-01-01' : undefined}
+          required={required}
+          aria-describedby={describedBy}
+        />
+      )}
+      {field.hint && (
+        <p class="field__hint" id={hintId}>
+          {field.hint}
+        </p>
+      )}
+      <p class="field__error" id={errorId} data-error />
+    </div>
+  )
+}
+
+<style>
+  .rf {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .rf--full {
+    grid-column: 1 / -1;
+  }
+
+  .rf__req {
+    color: var(--c-brun-2);
+    font-weight: 700;
+  }
+
+  .rf__textarea {
+    min-height: 7.5rem;
+  }
+
+  /* --- Question à choix : grandes cartes tactiles ------------------------ */
+  .rf--choice {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .rf__legend {
+    float: left; /* légende « non rendue » : elle se place dans la grille comme un libellé ordinaire */
+    width: 100%;
+    padding: 0;
+    margin-bottom: 0.1rem;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+
+  .rf__hint {
+    margin-top: -0.2rem;
+  }
+
+  .rf__options {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .rf__options--compact {
+    grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  }
+
+  .choice {
+    position: relative;
+    display: block;
+    cursor: pointer;
+  }
+
+  /* Le bouton radio natif reste focalisable et navigable au clavier ; la carte affiche son état. */
+  .choice__input {
+    position: absolute;
+    top: 50%;
+    left: 1.6rem;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+  }
+
+  .choice__box {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-height: 3.25rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--c-sable-3);
+    border-radius: var(--r-s);
+    background: #fffdf9;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    transition:
+      border-color var(--t-fast) var(--ease-out),
+      background-color var(--t-fast) var(--ease-out),
+      box-shadow var(--t-fast) var(--ease-out);
+  }
+
+  .choice:hover .choice__box {
+    border-color: #b9a888;
+    background: #fff;
+  }
+
+  .choice__dot {
+    position: relative;
+    flex: none;
+    width: 1.3rem;
+    height: 1.3rem;
+    border: 1.5px solid #8c7b62;
+    border-radius: 50%;
+    background: #fff;
+    transition:
+      border-color var(--t-fast) var(--ease-out),
+      background-color var(--t-fast) var(--ease-out);
+  }
+
+  .choice__dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--c-ivoire);
+    transform: scale(0);
+    transition: transform var(--t-fast) var(--ease-out);
+  }
+
+  .choice__text {
+    min-width: 0;
+    text-wrap: pretty;
+  }
+
+  .choice__input:checked + .choice__box {
+    border-color: var(--c-foret);
+    background: #e9efe9;
+    box-shadow: inset 0 0 0 1px var(--c-foret);
+  }
+
+  .choice__input:checked + .choice__box .choice__dot {
+    border-color: var(--c-foret);
+    background: var(--c-foret);
+  }
+
+  .choice__input:checked + .choice__box .choice__dot::after {
+    transform: scale(1);
+  }
+
+  .choice__input:focus-visible + .choice__box {
+    outline: 2px solid var(--c-encre);
+    outline-offset: 2px;
+  }
+
+  .choice__input[aria-invalid='true'] + .choice__box {
+    border-color: #a5432d;
+  }
+
+  /* --- Case de confirmation ---------------------------------------------- */
+  .rf--consent {
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .rf__consent {
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--c-sable-3);
+    border-radius: var(--r-s);
+    background: var(--c-sable-2);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    cursor: pointer;
+    transition:
+      border-color var(--t-fast) var(--ease-out),
+      background-color var(--t-fast) var(--ease-out);
+  }
+
+  .rf__consent:hover {
+    border-color: #b9a888;
+  }
+
+  .rf__consent:has(input:checked) {
+    border-color: var(--c-foret);
+    background: #e9efe9;
+  }
+
+  .rf__consent input {
+    flex: none;
+    width: 1.3rem;
+    height: 1.3rem;
+    margin: 0.1rem 0 0;
+    accent-color: var(--c-foret);
+    cursor: pointer;
+  }
+
+  .rf__consent input[aria-invalid='true'] {
+    outline: 2px solid #a5432d;
+    outline-offset: 2px;
+  }
+</style>

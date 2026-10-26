@@ -1,0 +1,121 @@
+---
+import Base from '@/layouts/Base.astro';
+import BrandMark from '@/components/BrandMark.astro';
+import JourneyHero from '@/components/experience/JourneyHero.astro';
+import InfoBand from '@/components/experience/InfoBand.astro';
+import JourneyNav from '@/components/experience/JourneyNav.astro';
+import Dimensions from '@/components/experience/Dimensions.astro';
+import Programme from '@/components/experience/Programme.astro';
+import Included from '@/components/experience/Included.astro';
+import Pricing from '@/components/experience/Pricing.astro';
+import ExperienceFaq from '@/components/experience/ExperienceFaq.astro';
+import FinalBanner from '@/components/experience/FinalBanner.astro';
+import MobileCta from '@/components/MobileCta.astro';
+import { experiences } from '@/content/experiences';
+import type { Experience } from '@/content/types';
+import { resolveImage } from '@/lib/images';
+import { getImage } from 'astro:assets';
+
+export function getStaticPaths() {
+  return experiences.map((exp) => ({ params: { slug: exp.slug }, props: { experience: exp } }));
+}
+
+interface Props {
+  experience: Experience;
+}
+const { experience: exp } = Astro.props;
+
+const heroMeta = resolveImage(exp.hero.src);
+const ogImage = heroMeta ? (await getImage({ src: heroMeta, width: 1200, height: 630, format: 'jpg', layout: 'none' })).src : undefined;
+
+// Sommaire : uniquement les sections réellement affichées.
+const hasIncluded = (exp.included?.length ?? 0) > 0 || (exp.notIncluded?.length ?? 0) > 0;
+const hasPricing = Boolean(exp.pricing) || (exp.applicationSteps?.length ?? 0) > 0;
+const hasFaq = (exp.faq?.length ?? 0) > 0;
+const navItems = [
+  { href: '#dimensions', label: 'L’expérience' },
+  { href: '#etapes', label: 'Programme' },
+  ...(hasIncluded ? [{ href: '#inclus', label: 'Inclus' }] : []),
+  ...(hasPricing ? [{ href: '#tarif', label: 'Tarif' }] : []),
+  ...(hasFaq ? [{ href: '#questions', label: 'Questions' }] : []),
+];
+---
+
+<Base
+  title={exp.seo.title}
+  description={exp.seo.description}
+  ogImage={ogImage}
+  ogImageAlt={exp.hero.alt}
+  ogType="article"
+  bodyClass="has-mobile-cta"
+>
+  <div class="journey">
+    <JourneyHero experience={exp} />
+    <InfoBand experience={exp} />
+    <JourneyNav items={navItems} ctaHref={exp.applicationUrl} />
+
+    {
+      exp.intro && (
+        <section class="xintro">
+          <div class="container xintro__inner" data-reveal>
+            <span class="xintro__mark" aria-hidden="true">
+              <BrandMark height={30} />
+            </span>
+            <p class="xintro__text">{exp.intro}</p>
+          </div>
+        </section>
+      )
+    }
+
+    <Dimensions items={exp.dimensions} />
+    <Programme experience={exp} />
+    <Included included={exp.included} notIncluded={exp.notIncluded} />
+    <Pricing experience={exp} />
+    <ExperienceFaq items={exp.faq} />
+    <FinalBanner experience={exp} />
+  </div>
+  <MobileCta label="Faire ma demande" href={exp.applicationUrl ?? '#tarif'} target="#tarif, #demande" />
+</Base>
+
+<style>
+  .xintro {
+    padding-top: clamp(2.5rem, 5vw, 4rem);
+  }
+
+  .xintro__inner {
+    display: grid;
+    gap: 1.25rem;
+    justify-items: start;
+  }
+
+  .xintro__mark {
+    display: grid;
+    place-items: center;
+    width: 3.75rem;
+    height: 3.75rem;
+    border-radius: 50%;
+    border: 1px solid var(--c-or);
+    background: #fffdf9;
+  }
+
+  .xintro__text {
+    max-width: 52rem;
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: clamp(1.45rem, 2.5vw, 2rem);
+    line-height: 1.35;
+    text-wrap: pretty;
+  }
+
+  @media (min-width: 48rem) {
+    .xintro__inner {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: start;
+      gap: 2rem;
+    }
+
+    .xintro__mark {
+      margin-top: 0.35rem;
+    }
+  }
+</style>

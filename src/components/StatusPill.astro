@@ -1,0 +1,45 @@
+---
+import { STATUS_LABELS, type ExperienceStatus } from '@/content/types';
+
+interface Props {
+  status: ExperienceStatus;
+  class?: string;
+}
+const { status, class: className } = Astro.props;
+---
+
+<span class:list={['pill', `pill--${status}`, className]}>
+  <span class="pill__dot" aria-hidden="true"></span>
+  {STATUS_LABELS[status]}
+</span>
+
+<style>
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--r-pill);
+    background: var(--c-sable);
+    color: var(--c-encre);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .pill__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--c-gris);
+  }
+
+  .pill--demandes-ouvertes .pill__dot {
+    background: var(--c-or);
+  }
+
+  .pill--complet {
+    color: var(--c-gris);
+  }
+</style>

@@ -1,0 +1,379 @@
+---
+/** En-tête commun : logo, navigation, bouton mis en avant, menu mobile accessible. */
+import { site } from '@/content/site';
+import Logo from './Logo.astro';
+import Arrow from './Arrow.astro';
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href: string) => (href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`));
+const current = (href: string) => (path === href ? 'page' : isActive(href) ? 'true' : undefined);
+const ctaCurrent = path === site.navCta.href ? 'page' : undefined;
+---
+
+<header class="header on-dark" data-header>
+  <div class="container header__inner">
+    <a href="/" class="header__logo" aria-label="RAHAL, retour à l’accueil">
+      <Logo variant="light" height={56} />
+    </a>
+
+    <nav class="header__nav" aria-label="Navigation principale">
+      <ul class="header__links" role="list">
+        {
+          site.nav.map((item) => (
+            <li>
+              <a href={item.href} class="header__link" aria-current={current(item.href)}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="btn header__cta" href={site.navCta.href} aria-current={ctaCurrent}>
+        {site.navCta.label}
+        <Arrow />
+      </a>
+    </nav>
+
+    <button
+      class="header__burger"
+      type="button"
+      aria-expanded="false"
+      aria-controls="menu-mobile"
+      data-menu-toggle
+    >
+      <span class="header__burger-label" data-menu-label>Menu</span>
+      <span class="burger" aria-hidden="true"><i></i><i></i></span>
+    </button>
+  </div>
+
+</header>
+
+<!-- Panneau de navigation mobile : hors de l'en-tête pour rester en position fixe plein écran. -->
+  <div class="menu on-dark" id="menu-mobile" hidden data-menu>
+    <nav class="container menu__inner" aria-label="Navigation mobile">
+      <ul class="menu__links" role="list">
+        {
+          site.nav.map((item) => (
+            <li>
+              <a href={item.href} class="menu__link" aria-current={current(item.href)}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a class="btn btn--block menu__cta" href={site.navCta.href}>
+        {site.navCta.label}
+        <Arrow />
+      </a>
+      <p class="menu__tagline">{site.tagline}</p>
+    </nav>
+  </div>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const label = document.querySelector<HTMLElement>('[data-menu-label]');
+  const menu = document.getElementById('menu-mobile');
+
+  if (toggle && menu) {
+    const focusables = () => Array.from(menu.querySelectorAll<HTMLElement>('a, button'));
+    const isOpen = () => !menu.hidden;
+
+    const open = () => {
+      menu.hidden = false;
+      toggle.setAttribute('aria-expanded', 'true');
+      if (label) label.textContent = 'Fermer';
+      document.documentElement.classList.add('menu-open');
+    };
+
+    const close = (refocus = true) => {
+      menu.hidden = true;
+      toggle.setAttribute('aria-expanded', 'false');
+      if (label) label.textContent = 'Menu';
+      document.documentElement.classList.remove('menu-open');
+      if (refocus) toggle.focus();
+    };
+
+    toggle.addEventListener('click', () => (isOpen() ? close() : open()));
+
+    menu.addEventListener('click', (event) => {
+      if ((event.target as HTMLElement).closest('a')) close(false);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && isOpen()) close();
+    });
+
+    // Boucle de focus : bouton -> liens du menu -> bouton.
+    toggle.addEventListener('keydown', (event) => {
+      if (!isOpen() || event.key !== 'Tab') return;
+      const items = focusables();
+      if (!items.length) return;
+      event.preventDefault();
+      (event.shiftKey ? items[items.length - 1] : items[0]).focus();
+    });
+
+    menu.addEventListener('keydown', (event) => {
+      if (event.key !== 'Tab') return;
+      const items = focusables();
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        toggle.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        toggle.focus();
+      }
+    });
+
+    const desktop = window.matchMedia('(min-width: 64rem)');
+    desktop.addEventListener('change', () => {
+      if (desktop.matches && isOpen()) close(false);
+    });
+  }
+</script>
+
+<style>
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    /* Fond encre, comme le pied de page : la navigation se détache du contenu clair. */
+    background: rgb(34 33 31 / 0.97);
+    backdrop-filter: saturate(1.2) blur(14px);
+    -webkit-backdrop-filter: saturate(1.2) blur(14px);
+    border-bottom: 1px solid rgb(247 243 235 / 0.08);
+    color: var(--c-ivoire);
+  }
+
+  .header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    min-height: var(--header-h);
+  }
+
+  .header__logo {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    padding-block: 0.4rem;
+    height: var(--header-h);
+  }
+
+  .header__logo :global(.logo-img) {
+    height: 2.9rem;
+  }
+
+  @media (min-width: 64rem) {
+    .header__logo :global(.logo-img) {
+      height: 3.4rem;
+    }
+  }
+
+  .header__nav {
+    display: none;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .header__links {
+    display: flex;
+    gap: 1.75rem;
+    list-style: none;
+  }
+
+  .header__link {
+    position: relative;
+    display: inline-block;
+    padding-block: 0.4rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    color: var(--c-ivoire);
+    transition: color var(--t-fast) var(--ease-out);
+  }
+
+  .header__link:hover,
+  .header__link[aria-current] {
+    color: #fff;
+  }
+
+  .header__link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--c-or);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--t-base) var(--ease-out);
+  }
+
+  .header__link:hover::after,
+  .header__link[aria-current]::after {
+    transform: scaleX(1);
+  }
+
+  /* Bouton vert, de la couleur de l'affiche « Chine à vivre ». */
+  .header__cta,
+  .menu__cta {
+    --btn-bg: var(--c-foret);
+    --btn-fg: var(--c-ivoire);
+    --btn-border: #3d6356;
+  }
+
+  .header__cta:hover,
+  .menu__cta:hover {
+    --btn-bg: #2f5247;
+    --btn-border: #5b8173;
+  }
+
+  .header__cta {
+    min-height: 2.75rem;
+    padding: 0.65rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  /* --- Bouton menu (mobile) --- */
+  .header__burger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.2rem 0.4rem 0.75rem;
+    border: 0;
+    background: transparent;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--c-ivoire);
+  }
+
+  .burger {
+    position: relative;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: inline-block;
+  }
+
+  .burger i {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transition:
+      transform var(--t-base) var(--ease-out),
+      top var(--t-base) var(--ease-out);
+  }
+
+  .burger i:first-child {
+    top: 0.45rem;
+  }
+
+  .burger i:last-child {
+    top: 0.95rem;
+  }
+
+  .header__burger[aria-expanded='true'] .burger i:first-child {
+    top: 0.7rem;
+    transform: rotate(45deg);
+  }
+
+  .header__burger[aria-expanded='true'] .burger i:last-child {
+    top: 0.7rem;
+    transform: rotate(-45deg);
+  }
+
+  /* --- Panneau mobile --- */
+  .menu {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 99;
+    background: var(--c-encre);
+    color: var(--c-ivoire);
+    overflow-y: auto;
+    padding-block: 1.5rem 2rem;
+    animation: menu-in var(--t-base) var(--ease-out);
+  }
+
+  .menu[hidden] {
+    display: none;
+  }
+
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .menu__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    min-height: 100%;
+  }
+
+  .menu__links {
+    list-style: none;
+    display: grid;
+  }
+
+  .menu__link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid rgb(247 243 235 / 0.12);
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    color: var(--c-ivoire);
+  }
+
+  .menu__link[aria-current]::after {
+    content: '';
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--c-or);
+  }
+
+  .menu__tagline {
+    margin-top: auto;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.35rem;
+    color: var(--c-or-clair);
+  }
+
+  :global(html.menu-open) {
+    overflow: hidden;
+  }
+
+  @media (min-width: 64rem) {
+    .header__nav {
+      display: flex;
+    }
+
+    .header__burger,
+    .menu {
+      display: none;
+    }
+  }
+</style>

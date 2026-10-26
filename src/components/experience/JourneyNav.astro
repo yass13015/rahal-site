@@ -1,0 +1,210 @@
+---
+/**
+ * Sommaire de la page du séjour, en pastilles.
+ * Mobile : défilable horizontalement. Ordinateur : reste visible sous l'en-tête,
+ * surligne la section en cours et garde le bouton de demande à portée de main.
+ */
+import Arrow from '../Arrow.astro';
+
+interface Props {
+  items: { href: string; label: string }[];
+  /** Lien de la demande d'inscription (bouton affiché sur ordinateur). */
+  ctaHref?: string;
+}
+const { items, ctaHref } = Astro.props;
+---
+
+<nav class="jnav" aria-label="Sommaire du voyage" data-jnav>
+  <div class="container jnav__inner">
+    <ol class="jnav__list" role="list">
+      {
+        items.map((item, i) => (
+          <li>
+            <a class="jnav__link" href={item.href}>
+              <span class="jnav__num" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span class="jnav__sep" aria-hidden="true">
+                ·
+              </span>
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+    {
+      ctaHref && (
+        <a class="btn jnav__cta" href={ctaHref}>
+          Faire ma demande
+          <Arrow />
+        </a>
+      )
+    }
+  </div>
+</nav>
+
+<script>
+  // Surligne la pastille de la section affichée à l'écran.
+  const nav = document.querySelector<HTMLElement>('[data-jnav]');
+  if (nav && 'IntersectionObserver' in window) {
+    const links = [...nav.querySelectorAll<HTMLAnchorElement>('a.jnav__link')];
+    const sections = new Map<Element, HTMLAnchorElement>();
+    for (const link of links) {
+      const section = link.hash ? document.getElementById(link.hash.slice(1)) : null;
+      if (section) sections.set(section, link);
+    }
+    const visible = new Set<Element>();
+    const update = () => {
+      let current: HTMLAnchorElement | undefined;
+      for (const [section, link] of sections) {
+        if (visible.has(section)) {
+          current = link;
+          break;
+        }
+      }
+      for (const link of links) {
+        if (link === current) link.setAttribute('aria-current', 'location');
+        else link.removeAttribute('aria-current');
+      }
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target);
+          else visible.delete(entry.target);
+        }
+        update();
+      },
+      { rootMargin: '-30% 0px -60% 0px' },
+    );
+    sections.forEach((_, section) => observer.observe(section));
+  }
+</script>
+
+<style>
+  .jnav {
+    position: relative;
+    z-index: 60;
+    background: rgb(247 243 235 / 0.95);
+    border-bottom: 1px solid var(--c-sable-3);
+  }
+
+  .jnav__inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .jnav__list {
+    list-style: none;
+    display: flex;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    padding-block: 0.75rem;
+    /* Un peu d'air à gauche pour que le contour de focus de la 1re pastille ne soit pas rogné */
+    padding-left: 0.35rem;
+    margin-left: -0.35rem;
+    /* Laisse deviner qu'il reste des pastilles à droite */
+    padding-right: 2.5rem;
+    margin-right: calc(var(--gutter) * -1);
+    /* Une pastille atteinte au clavier ne s'arrête pas sous le fondu */
+    scroll-padding-inline: 0.35rem 2.75rem;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 2.75rem), transparent);
+  }
+
+  .jnav__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .jnav__list li {
+    flex: none;
+    scroll-snap-align: start;
+  }
+
+  .jnav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.5rem;
+    padding: 0.45rem 1rem;
+    border: 1px solid var(--c-sable-3);
+    border-radius: var(--r-pill);
+    background: #fffdf9;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+    transition:
+      background-color var(--t-fast) var(--ease-out),
+      border-color var(--t-fast) var(--ease-out),
+      color var(--t-fast) var(--ease-out);
+  }
+
+  .jnav__link:hover {
+    border-color: var(--c-encre);
+  }
+
+  .jnav__num {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--c-brun);
+  }
+
+  .jnav__sep {
+    color: var(--c-brun);
+  }
+
+  .jnav__link[aria-current] {
+    background: var(--c-encre);
+    border-color: var(--c-encre);
+    color: var(--c-ivoire);
+  }
+
+  .jnav__link[aria-current] .jnav__num,
+  .jnav__link[aria-current] .jnav__sep {
+    color: var(--c-or-clair);
+  }
+
+  .jnav__cta {
+    display: none;
+  }
+
+  @media (min-width: 64rem) {
+    /* Ancres et focus clavier ne passent jamais sous l'en-tête + le sommaire collés. */
+    :global(html:has([data-jnav])) {
+      scroll-padding-top: calc(var(--header-h) + 4.25rem + 1rem);
+    }
+
+    .jnav {
+      position: sticky;
+      top: var(--header-h);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .jnav__list {
+      padding-right: 0.35rem;
+      margin-right: 0;
+      scroll-padding-inline: 0.35rem;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+
+    .jnav__cta {
+      display: inline-flex;
+      flex: none;
+      min-height: 2.5rem;
+      padding: 0.5rem 1.15rem;
+      font-size: 0.875rem;
+    }
+  }
+</style>

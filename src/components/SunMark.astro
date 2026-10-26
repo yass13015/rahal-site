@@ -1,0 +1,31 @@
+---
+/**
+ * Motif graphique de la marque : le disque doré du logo (décoratif).
+ * Dégradé radial rappelant la feuille d'or du logo ; identifiant unique par instance.
+ */
+interface Props {
+  class?: string;
+  size?: number;
+}
+const { class: className, size = 20 } = Astro.props;
+const id = `sun-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<svg class:list={['sun', className]} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <defs>
+    <radialGradient id={id} cx="36%" cy="30%" r="78%">
+      <stop offset="0" stop-color="#EED6A0"></stop>
+      <stop offset="0.45" stop-color="#D9B46B"></stop>
+      <stop offset="0.8" stop-color="#C79A4F"></stop>
+      <stop offset="1" stop-color="#B0853F"></stop>
+    </radialGradient>
+  </defs>
+  <circle cx="12" cy="12" r="11.2" fill={`url(#${id})`}></circle>
+</svg>
+
+<style>
+  .sun {
+    display: inline-block;
+    flex: none;
+  }
+</style>

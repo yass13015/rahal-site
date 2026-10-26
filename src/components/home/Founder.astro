@@ -1,0 +1,71 @@
+---
+/** Le fondateur : portrait et aperçu personnel de l'origine du projet. */
+import { accueil } from '@/content/pages/accueil';
+import Photo from '../Photo.astro';
+import Arrow from '../Arrow.astro';
+import SunMark from '../SunMark.astro';
+
+const { founder } = accueil;
+---
+
+<section class="founder section" aria-labelledby="founder-titre">
+  <div class="container founder__inner">
+    <div class="founder__media" data-reveal>
+      <Photo image={founder.portrait} ratio="4 / 5" mobileRatio="1 / 1" rounded sizes="(min-width: 64rem) 40vw, 100vw" />
+      <SunMark size={54} class="founder__sun" />
+    </div>
+    <div class="founder__body" data-reveal style="--reveal-delay:120ms">
+      <p class="kicker">{founder.kicker}</p>
+      <h2 class="h-serif" id="founder-titre">{founder.title}</h2>
+      <p class="founder__text">{founder.text}</p>
+      <a class="btn" href="/a-propos">
+        {founder.cta}
+        <Arrow />
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .founder__inner {
+    display: grid;
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  .founder__media {
+    position: relative;
+    max-width: 30rem;
+  }
+
+  .founder :global(.founder__sun) {
+    position: absolute;
+    right: -0.75rem;
+    bottom: 1.5rem;
+    filter: drop-shadow(0 4px 10px rgb(34 33 31 / 0.12));
+  }
+
+  .founder__body {
+    display: grid;
+    gap: 1.25rem;
+    justify-items: start;
+    max-width: 34rem;
+  }
+
+  .founder__text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  @media (min-width: 64rem) {
+    .founder__inner {
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 5rem;
+    }
+
+    .founder__body {
+      padding-inline: 1rem;
+    }
+  }
+</style>

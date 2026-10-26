@@ -1,0 +1,165 @@
+---
+import Base from '@/layouts/Base.astro';
+import FaqList from '@/components/FaqList.astro';
+import SectionHead from '@/components/SectionHead.astro';
+import ContactForm from '@/components/forms/ContactForm.astro';
+import Topo from '@/components/Topo.astro';
+import Photo from '@/components/Photo.astro';
+import { faqContact as copy } from '@/content/pages/faq-contact';
+import { site } from '@/content/site';
+
+const { email, instagram, instagramHandle, whatsapp } = site.contact;
+const hasContact = Boolean(email || instagram || whatsapp);
+---
+
+<Base title={copy.seo.title} description={copy.seo.description}>
+  <section class="faqp section" id="faq" aria-labelledby="faq-titre">
+    <Topo class="faqp__topo" />
+    <div class="container faqp__inner">
+      <div class="faqp__aside">
+        <SectionHead kicker={copy.faq.kicker} title={copy.faq.title} level="h1" serif id="faq-titre" class="faqp__head" />
+        <Photo image={copy.faq.image} ratio="4 / 5" mobileRatio="16 / 9" rounded priority class="faqp__photo" sizes="(min-width: 76rem) 26rem, (min-width: 64rem) 36vw, calc(100vw - 2.5rem)" />
+      </div>
+      <div data-reveal>
+        <FaqList items={copy.faq.items} id="faq" />
+      </div>
+    </div>
+  </section>
+
+  <section class="contact section section--sand" id="contact" aria-labelledby="contact-titre">
+    <div class="container contact__inner">
+      <div class="contact__text" data-reveal>
+        <SectionHead kicker={copy.contact.kicker} title={copy.contact.title} lede={copy.contact.text} level="h2" serif id="contact-titre" />
+        {
+          hasContact && (
+            <ul class="contact__links" role="list">
+              {email && (
+                <li>
+                  <span class="contact__label">Email</span>
+                  <a href={`mailto:${email}`}>{email}</a>
+                </li>
+              )}
+              {instagram && (
+                <li>
+                  <span class="contact__label">Instagram</span>
+                  <a href={instagram} target="_blank" rel="noopener">
+                    {instagramHandle || 'Nous suivre'}
+                  </a>
+                </li>
+              )}
+              {whatsapp && (
+                <li>
+                  <span class="contact__label">WhatsApp</span>
+                  <a href={whatsapp} target="_blank" rel="noopener">
+                    Nous écrire sur WhatsApp
+                  </a>
+                </li>
+              )}
+            </ul>
+          )
+        }
+      </div>
+      <div class="contact__panel" data-reveal style="--reveal-delay:120ms">
+        <ContactForm subjects={copy.contact.subjects} />
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .faqp {
+    position: relative;
+    overflow: hidden;
+    /* clip rogne le décor sans bloquer la colonne collante (hidden la rendait inopérante). */
+    overflow: clip;
+  }
+
+  .faqp :global(.faqp__topo) {
+    --topo-opacity: 0.09;
+    inset: -30% -25% auto auto;
+    width: 70%;
+    height: 150%;
+  }
+
+  .faqp__inner {
+    position: relative;
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .faqp :global(.faqp__head) {
+    margin-bottom: 1.5rem;
+  }
+
+  .faqp__aside {
+    display: grid;
+    align-content: start;
+  }
+
+  .contact__inner {
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  .contact__text :global(.section-head) {
+    margin-bottom: 1.5rem;
+  }
+
+  .contact__links {
+    list-style: none;
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .contact__links li {
+    display: grid;
+    gap: 0.15rem;
+  }
+
+  .contact__label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--c-brun-2);
+  }
+
+  /* Sur le fond sable, le brun plus foncé garde un contraste suffisant pour les petits libellés. */
+  .contact :global(.kicker) {
+    color: var(--c-brun-2);
+  }
+
+  .contact__links a {
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px solid var(--c-or);
+    width: fit-content;
+  }
+
+  .contact__panel {
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    border-radius: var(--r-l);
+    background: var(--c-ivoire);
+    border: 1px solid rgb(217 203 179 / 0.7);
+    box-shadow: var(--shadow-s);
+  }
+
+  @media (min-width: 64rem) {
+    .faqp__inner {
+      grid-template-columns: 1fr 1.5fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    .faqp__aside {
+      position: sticky;
+      top: calc(var(--header-h) + 1.5rem);
+    }
+
+    .contact__inner {
+      grid-template-columns: 1fr 1.2fr;
+      gap: 4rem;
+      align-items: start;
+    }
+  }
+</style>

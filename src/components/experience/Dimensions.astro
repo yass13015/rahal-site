@@ -1,0 +1,144 @@
+---
+/** Les trois dimensions de l'expérience : trois colonnes, photo au-dessus du texte. */
+import type { Dimension } from '@/content/types';
+import Photo from '../Photo.astro';
+
+interface Props {
+  items: Dimension[];
+  kicker?: string;
+  /** Début du titre, en romain. */
+  title?: string;
+  /** Fin du titre, en italique. */
+  emphasis?: string;
+}
+const { items, kicker = 'L’expérience', title = 'Trois dimensions,', emphasis = 'un même séjour.' } = Astro.props;
+---
+
+<section class="dims" id="dimensions" aria-labelledby="dims-titre">
+  <div class="container">
+    <div class="dims__head">
+      <p class="kicker">{kicker}</p>
+      <h2 class="h-serif dims__title" id="dims-titre">{title} <em>{emphasis}</em></h2>
+    </div>
+    <ol class="dims__list" role="list">
+      {
+        items.map((item, i) => (
+          <li class="dim" data-reveal style={`--reveal-delay:${i * 90}ms`}>
+            {item.image && (
+              <Photo
+                image={item.image}
+                ratio="4 / 3"
+                rounded
+                sizes="(min-width: 76rem) 360px, (min-width: 64rem) 30vw, (min-width: 40rem) 42vw, calc(100vw - 2.5rem)"
+              />
+            )}
+            <div class="dim__body">
+              <p class="dim__num" aria-hidden="true">
+                {String(i + 1).padStart(2, '0')}
+              </p>
+              <h3 class="dim__title">{item.title}</h3>
+              <p class="dim__text">{item.text}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .dims {
+    padding-block: clamp(2.5rem, 5vw, 3.5rem) clamp(3rem, 6vw, 5rem);
+  }
+
+  .dims__head {
+    display: grid;
+    gap: 0.9rem;
+    margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
+  }
+
+  .dims__title {
+    font-size: clamp(2.2rem, 4vw, 3.4rem);
+    text-wrap: balance;
+  }
+
+  .dims__title em {
+    color: var(--c-brun-2);
+  }
+
+  .dims__list {
+    list-style: none;
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  .dim {
+    display: grid;
+    align-content: start;
+  }
+
+  .dim__body {
+    display: grid;
+    gap: 0.6rem;
+    max-width: 30rem;
+  }
+
+  /* Numéro posé à cheval sur la photo */
+  .dim__num {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    margin: -1.75rem 0 0 1.25rem;
+    border-radius: 50%;
+    background: var(--c-ivoire);
+    border: 1px solid var(--c-or);
+    box-shadow: var(--shadow-s);
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.35rem;
+    line-height: 1;
+    color: var(--c-brun);
+  }
+
+  .dim__title {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: clamp(1.7rem, 2.4vw, 2.1rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .dim__text {
+    color: var(--c-gris);
+    font-size: 0.98rem;
+    text-wrap: pretty;
+  }
+
+  /* Tablette : photo et texte côte à côte */
+  @media (min-width: 40rem) and (max-width: 63.99rem) {
+    .dim {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 1.75rem;
+      align-items: center;
+    }
+
+    .dim__num {
+      margin: 0;
+      width: 2.75rem;
+      height: 2.75rem;
+      font-size: 1.2rem;
+    }
+  }
+
+  /* Ordinateur : trois colonnes */
+  @media (min-width: 64rem) {
+    .dims__list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(1.5rem, 3vw, 2.5rem);
+    }
+  }
+</style>

@@ -1,0 +1,187 @@
+---
+/** Carte d'expérience : photo, nom, pays, pratique, informations confirmées, statut et bouton. */
+import type { Experience } from '@/content/types';
+import Photo from './Photo.astro';
+import StatusPill from './StatusPill.astro';
+import Arrow from './Arrow.astro';
+
+interface Props {
+  experience: Experience;
+  /** `feature` : grande carte horizontale ; `grid` : carte verticale pour une grille. */
+  variant?: 'feature' | 'grid';
+  headingLevel?: 'h2' | 'h3';
+  /** Image chargée en priorité (carte visible dès l'ouverture de la page). */
+  priority?: boolean;
+  class?: string;
+}
+const { experience: exp, variant = 'feature', headingLevel = 'h3', priority = false, class: className } = Astro.props;
+const Heading = headingLevel;
+const href = `/experiences/${exp.slug}`;
+---
+
+<article class:list={['card', `card--${variant}`, className]}>
+  <div class="card__media">
+    <Photo
+      image={exp.card}
+      ratio={variant === 'feature' ? '4 / 5' : '4 / 3'}
+      mobileRatio="4 / 3"
+      sizes={variant === 'feature' ? '(min-width: 76rem) 575px, (min-width: 64rem) 47vw, calc(100vw - 2.5rem)' : '(min-width: 64rem) 33vw, calc(100vw - 2.5rem)'}
+      priority={priority}
+    />
+  </div>
+  <div class="card__body">
+    <div class="card__top">
+      <p class="kicker">
+        {exp.country} · {exp.practice}
+      </p>
+      <StatusPill status={exp.status} />
+    </div>
+    <Heading class="card__title">{exp.name}</Heading>
+    <p class="card__summary">{exp.summary}</p>
+    <dl class="card__meta">
+      <div class="card__meta-item">
+        <dt>Dates</dt>
+        <dd>{exp.dates ?? 'À venir'}</dd>
+      </div>
+      {
+        exp.duration && (
+          <div class="card__meta-item">
+            <dt>Durée</dt>
+            <dd>{exp.duration}</dd>
+          </div>
+        )
+      }
+      {
+        exp.groupSize && (
+          <div class="card__meta-item">
+            <dt>Groupe</dt>
+            <dd>{exp.groupSize}</dd>
+          </div>
+        )
+      }
+      <div class="card__meta-item">
+        <dt>Tarif</dt>
+        <dd>{exp.price ?? 'Communiqué avec le programme'}</dd>
+      </div>
+    </dl>
+    <a class="btn card__btn" href={href} aria-label={`Découvrir l’expérience ${exp.name} en ${exp.country}`}>
+      Découvrir l’expérience
+      <Arrow />
+    </a>
+  </div>
+</article>
+
+<style>
+  .card {
+    position: relative;
+    display: grid;
+    overflow: hidden;
+    border-radius: var(--r-l);
+    background: #fffdf9;
+    border: 1px solid var(--c-sable-3);
+    box-shadow: var(--shadow-s);
+    transition:
+      box-shadow var(--t-base) var(--ease-out),
+      transform var(--t-base) var(--ease-out);
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-m);
+    transform: translateY(-2px);
+  }
+
+  .card__media {
+    overflow: hidden;
+  }
+
+  .card__media :global(img),
+  .card__media :global(.placeholder) {
+    transition: transform 1.2s var(--ease-out);
+  }
+
+  .card:hover .card__media :global(img),
+  .card:hover .card__media :global(.placeholder) {
+    transform: scale(1.03);
+  }
+
+  .card__body {
+    display: grid;
+    align-content: start;
+    gap: 1.1rem;
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .card__top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .card__title {
+    font-family: var(--font-sans);
+    font-weight: 800;
+    font-size: clamp(2.2rem, 4.5vw, 3.5rem);
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .card__summary {
+    color: var(--c-gris);
+    text-wrap: pretty;
+  }
+
+  .card__meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.9rem 1.25rem;
+    padding: 1.1rem 0;
+    border-top: 1px solid var(--c-sable-3);
+    border-bottom: 1px solid var(--c-sable-3);
+  }
+
+  .card__meta-item dt {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-brun);
+    margin-bottom: 0.2rem;
+  }
+
+  .card__meta-item dd {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  /* Toute la carte est cliquable : le bouton s'étend sur la carte. */
+  .card__btn {
+    position: static;
+    width: fit-content;
+  }
+
+  .card__btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  .card__btn:focus-visible {
+    outline-offset: -4px;
+  }
+
+  @media (min-width: 64rem) {
+    .card--feature {
+      grid-template-columns: 1.05fr 1fr;
+    }
+
+    .card--feature .card__body {
+      align-self: center;
+      padding: clamp(2rem, 4vw, 3.5rem);
+    }
+  }
+</style>

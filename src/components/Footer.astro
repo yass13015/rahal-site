@@ -1,0 +1,212 @@
+---
+import BrandMark from '@/components/BrandMark.astro';
+/** Pied de page commun : logo, navigation, réseaux, contact (email) et liens légaux (tous configurables). */
+import { site } from '@/content/site';
+import Logo from './Logo.astro';
+
+const year = new Date().getFullYear();
+const { email, instagram, instagramHandle, whatsapp } = site.contact;
+const hasSocial = Boolean(instagram || whatsapp);
+---
+
+<footer class="footer on-dark">
+  <BrandMark class="footer__sun" variant="light" height={300} />
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <a href="/" class="footer__logo" aria-label="RAHAL, retour à l’accueil">
+        <Logo variant="light" height={64} />
+      </a>
+      <p class="footer__tagline">{site.tagline}</p>
+      <p class="footer__note">{site.footer.note}</p>
+    </div>
+
+    <nav class="footer__col" aria-label="Navigation du pied de page">
+      <p class="footer__title">Le site</p>
+      <ul role="list" class="footer__links">
+        <li><a href="/">Accueil</a></li>
+        {site.nav.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+        <li><a href={site.navCta.href}>{site.navCta.label}</a></li>
+      </ul>
+    </nav>
+
+    {
+      hasSocial && (
+        <div class="footer__col">
+          <p class="footer__title">Nous suivre</p>
+          <ul role="list" class="footer__links">
+            {instagram && (
+              <li>
+                <a href={instagram} rel="noopener" target="_blank">
+                  Instagram{instagramHandle ? ` · ${instagramHandle}` : ''}
+                </a>
+              </li>
+            )}
+            {whatsapp && (
+              <li>
+                <a href={whatsapp} rel="noopener" target="_blank">
+                  WhatsApp
+                </a>
+              </li>
+            )}
+          </ul>
+        </div>
+      )
+    }
+
+    <div class="footer__col">
+      <p class="footer__title">Contact</p>
+      <ul role="list" class="footer__links">
+        {email && (
+          <li>
+            <a href={`mailto:${email}`}>{email}</a>
+          </li>
+        )}
+        <li><a href="/faq-contact#contact">Formulaire de contact</a></li>
+        <li><a href="/faq-contact">Questions fréquentes</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="container footer__bottom">
+    <p>© {year} {site.name}. Tous droits réservés.</p>
+    {
+      site.legalLinks.length > 0 && (
+        <ul role="list" class="footer__legal">
+          {site.legalLinks.map((l) => (
+            <li>
+              <a href={l.href}>{l.label}</a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </div>
+</footer>
+
+<style>
+  .footer {
+    position: relative;
+    overflow: hidden;
+    margin-top: auto;
+    background: var(--c-encre);
+    color: var(--c-ivoire);
+    padding-block: clamp(3.5rem, 7vw, 5.5rem) 2rem;
+  }
+
+  .footer :global(.footer__sun) {
+    position: absolute;
+    right: 1rem;
+    top: -2rem;
+    opacity: 0.1;
+    pointer-events: none;
+  }
+
+  .footer__inner {
+    position: relative;
+    display: grid;
+    gap: 2.5rem 2rem;
+    grid-template-columns: 1fr;
+  }
+
+  .footer__brand {
+    display: grid;
+    gap: 0.9rem;
+    max-width: 22rem;
+  }
+
+  .footer__logo {
+    display: inline-flex;
+    text-decoration: none;
+    width: fit-content;
+  }
+
+  .footer__logo :global(.logo-img) {
+    height: 4rem;
+  }
+
+  .footer__tagline {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.5rem;
+    line-height: 1.2;
+    color: var(--c-or);
+  }
+
+  .footer__note {
+    font-size: 0.95rem;
+    color: var(--c-sable);
+  }
+
+  .footer__title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--c-or);
+    margin-bottom: 1rem;
+  }
+
+  .footer__links {
+    list-style: none;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .footer__links a {
+    color: var(--c-ivoire);
+    text-decoration: none;
+    font-size: 0.98rem;
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--t-fast) var(--ease-out);
+  }
+
+  .footer__links a[href^='mailto:'] {
+    overflow-wrap: anywhere;
+  }
+
+  .footer__links a:hover {
+    border-color: var(--c-or);
+  }
+
+  .footer__bottom {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 2rem;
+    justify-content: space-between;
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgb(247 243 235 / 0.14);
+    font-size: 0.85rem;
+    color: var(--c-sable);
+  }
+
+  .footer__legal {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+  }
+
+  .footer__legal a {
+    color: var(--c-sable);
+    text-decoration: none;
+  }
+
+  .footer__legal a:hover {
+    color: var(--c-ivoire);
+    text-decoration: underline;
+  }
+
+  @media (min-width: 40rem) {
+    .footer__inner {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .footer__inner {
+      grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    }
+  }
+</style>

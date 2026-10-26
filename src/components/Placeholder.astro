@@ -1,0 +1,69 @@
+---
+/**
+ * Visuel de substitution affiché quand une photo n'a pas encore été fournie.
+ * Composition de marque (dégradé sable, lignes topographiques, petit soleil), purement décorative.
+ */
+import Topo from './Topo.astro';
+import SunMark from './SunMark.astro';
+
+interface Props {
+  seed?: string;
+  class?: string;
+}
+const { seed = '', class: className } = Astro.props;
+
+// Petite variation déterministe selon la clé, pour que deux visuels voisins ne soient pas identiques.
+let hash = 0;
+for (const ch of seed) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+const angle = (hash % 5) * 8 - 16; // -16° à 16°
+const shift = 46 + (hash % 4) * 12; // position du soleil
+const tone = hash % 3;
+---
+
+<div
+  class:list={['placeholder', `placeholder--${tone}`, className]}
+  style={`--ph-angle:${angle}deg;--ph-sun:${shift}%`}
+  aria-hidden="true"
+>
+  <Topo class="placeholder__topo" />
+  <SunMark class="placeholder__sun" size={28} />
+</div>
+
+<style>
+  .placeholder {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 80% at 20% 100%, rgb(211 171 96 / 0.22), transparent 60%),
+      linear-gradient(165deg, #efe6d6 0%, var(--c-sable) 55%, #dccbb0 100%);
+  }
+
+  .placeholder--1 {
+    background:
+      radial-gradient(110% 90% at 80% 0%, rgb(211 171 96 / 0.2), transparent 60%),
+      linear-gradient(200deg, #f1eadc 0%, #e6d9c5 60%, #d8c7ab 100%);
+  }
+
+  .placeholder--2 {
+    background:
+      radial-gradient(100% 70% at 50% 100%, rgb(128 96 57 / 0.16), transparent 65%),
+      linear-gradient(150deg, #ede4d3 0%, #e3d6c0 50%, #d6c4a6 100%);
+  }
+
+  .placeholder :global(.placeholder__topo) {
+    --topo-color: var(--c-brun);
+    --topo-opacity: 0.2;
+    transform: rotate(var(--ph-angle)) scale(1.25);
+    transform-origin: center;
+  }
+
+  .placeholder :global(.placeholder__sun) {
+    position: absolute;
+    top: 9%;
+    right: var(--ph-sun);
+    opacity: 0.9;
+  }
+</style>

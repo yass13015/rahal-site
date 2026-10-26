@@ -1,0 +1,42 @@
+---
+/**
+ * Symbole RAHAL « h + soleil », extrait du logo (scripts/extract-brand-mark.cjs).
+ * Remplace les pictogrammes décoratifs (anciens ✳) : version foncée sur fond clair, claire sur fond sombre.
+ */
+import { getImage } from 'astro:assets';
+import mark from '@/assets/brand/h-soleil.png';
+import markLight from '@/assets/brand/h-soleil-clair.png';
+
+interface Props {
+  /** Hauteur d'affichage en pixels. */
+  height?: number;
+  variant?: 'dark' | 'light';
+  class?: string;
+}
+const { height = 28, variant = 'dark', class: className } = Astro.props;
+const source = variant === 'light' ? markLight : mark;
+const width = Math.round((source.width / source.height) * height);
+type ImageOptions = Parameters<typeof getImage>[0];
+const img = await getImage({ src: source, width, height, densities: [1, 2, 3], layout: 'none', format: 'webp', quality: 90 } as unknown as ImageOptions);
+---
+
+<img
+  class:list={['brand-mark', className]}
+  src={img.src}
+  srcset={img.srcSet.attribute || undefined}
+  width={width}
+  height={height}
+  alt=""
+  aria-hidden="true"
+  decoding="async"
+  loading="lazy"
+/>
+
+<style>
+  .brand-mark {
+    display: inline-block;
+    flex: none;
+    width: auto;
+    vertical-align: middle;
+  }
+</style>

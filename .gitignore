@@ -1,0 +1,14 @@
+# dépendances et build
+node_modules/
+dist/
+dist-preview/
+.astro/
+
+# secrets (ne jamais versionner)
+.env
+.env.*
+!.env.example
+
+# système
+.DS_Store
+npm-debug.log*

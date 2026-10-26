@@ -1,0 +1,11 @@
+---
+/** Flèche utilisée dans les boutons et liens. */
+interface Props {
+  class?: string;
+}
+const { class: className = 'btn__arrow' } = Astro.props;
+---
+
+<svg class={className} viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+  <path d="M3 10h13M11 5l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>

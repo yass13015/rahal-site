@@ -1,0 +1,59 @@
+---
+import BrandMark from '@/components/BrandMark.astro';
+import Base from '@/layouts/Base.astro';
+import Arrow from '@/components/Arrow.astro';
+import Topo from '@/components/Topo.astro';
+import { site } from '@/content/site';
+---
+
+<Base title="Page introuvable — RAHAL" description="Cette page n’existe pas ou plus." noindex>
+  <section class="nf">
+    <Topo class="nf__topo" />
+    <div class="container nf__inner">
+      <BrandMark height={52} />
+      <p class="kicker">Erreur 404</p>
+      <h1 class="h-serif">Ce chemin ne mène nulle part.</h1>
+      <p class="lede">La page que tu cherches n’existe pas, ou elle a changé d’adresse. Pas de panique&nbsp;: le voyage continue.</p>
+      <div class="nf__actions">
+        <a class="btn" href="/">
+          Retour à l’accueil
+          <Arrow />
+        </a>
+        <a class="btn btn--ghost" href={site.navCta.href}>{site.navCta.label}</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    position: relative;
+    overflow: hidden;
+    min-height: calc(80svh - var(--header-h));
+    display: grid;
+    align-items: center;
+    padding-block: var(--s-section);
+  }
+
+  .nf :global(.nf__topo) {
+    --topo-opacity: 0.12;
+    inset: -10% -10% auto auto;
+    width: 70%;
+    height: 120%;
+  }
+
+  .nf__inner {
+    position: relative;
+    display: grid;
+    gap: 1.25rem;
+    justify-items: start;
+    max-width: 40rem;
+  }
+
+  .nf__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+</style>

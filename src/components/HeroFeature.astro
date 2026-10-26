@@ -1,0 +1,166 @@
+---
+/**
+ * Grand visuel d'ouverture : photo plein écran, voile ivoire, label, grand titre et bouton.
+ * Utilisé sur l'accueil (expérience mise en avant) et sur la page du séjour.
+ */
+import type { ImageRef } from '@/content/types';
+import Photo from './Photo.astro';
+import Arrow from './Arrow.astro';
+
+interface Props {
+  image: ImageRef;
+  labels: readonly string[];
+  title: string;
+  text: string;
+  primary: { label: string; href: string };
+  secondary?: { label: string; href: string };
+  /** Hauteur réduite (page du séjour). */
+  compact?: boolean;
+}
+const { image, labels, title, text, primary, secondary, compact = false } = Astro.props;
+---
+
+<section class:list={['hero', { 'hero--compact': compact }]}>
+  <div class="hero__media">
+    <Photo image={image} priority fill sizes="100vw" class="hero__photo" />
+  </div>
+  <div class="hero__veil" aria-hidden="true"></div>
+
+  <div class="container hero__content">
+    <p class="hero__label">
+      {
+        labels.map((label, i) => (
+          <>
+            {i > 0 && <span class="hero__dot" aria-hidden="true" />}
+            <span>{label}</span>
+          </>
+        ))
+      }
+    </p>
+    <h1 class="display hero__title">{title}</h1>
+    <p class="hero__text">{text}</p>
+    <div class="hero__actions">
+      <a class="btn" href={primary.href}>
+        {primary.label}
+        <Arrow />
+      </a>
+      {
+        secondary && (
+          <a class="btn btn--ghost" href={secondary.href}>
+            {secondary.label}
+          </a>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    display: grid;
+    align-items: end;
+    min-height: min(calc(100svh - var(--header-h)), 60rem);
+    overflow: hidden;
+    background: var(--c-sable);
+  }
+
+  .hero--compact {
+    min-height: min(calc(88svh - var(--header-h)), 52rem);
+  }
+
+  .hero__media {
+    position: absolute;
+    inset: 0;
+  }
+
+  .hero__veil {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to top, var(--c-ivoire) 0%, var(--c-ivoire) 24%, rgb(247 243 235 / 0.88) 44%, rgb(247 243 235 / 0) 78%),
+      linear-gradient(to bottom, rgb(34 33 31 / 0.14), rgb(34 33 31 / 0) 32%);
+  }
+
+  .hero__content {
+    position: relative;
+    display: grid;
+    gap: 1.1rem;
+    padding-block: clamp(3rem, 8vw, 5rem) clamp(2.5rem, 6vw, 4.5rem);
+    padding-top: 42vh;
+  }
+
+  .hero__label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--c-brun);
+    animation: hero-in 0.9s var(--ease-out) both;
+  }
+
+  .hero__dot {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: var(--c-or);
+  }
+
+  .hero__title {
+    max-width: 100%;
+    animation: hero-in 1s var(--ease-out) 0.08s both;
+  }
+
+  .hero__text {
+    max-width: 34rem;
+    font-size: clamp(1.1rem, 1.7vw, 1.35rem);
+    line-height: 1.5;
+    text-wrap: pretty;
+    animation: hero-in 1s var(--ease-out) 0.18s both;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+    animation: hero-in 1s var(--ease-out) 0.28s both;
+  }
+
+  @keyframes hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__label,
+    .hero__title,
+    .hero__text,
+    .hero__actions {
+      animation: none;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .hero__content {
+      padding-top: 30vh;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .hero__veil {
+      background:
+        linear-gradient(to top, var(--c-ivoire) 0%, var(--c-ivoire) 18%, rgb(247 243 235 / 0.9) 38%, rgb(247 243 235 / 0) 72%),
+        linear-gradient(to bottom, rgb(34 33 31 / 0.12), rgb(34 33 31 / 0) 30%);
+    }
+  }
+</style>

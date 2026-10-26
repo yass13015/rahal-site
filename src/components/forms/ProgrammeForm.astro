@@ -1,0 +1,221 @@
+---
+/**
+ * Formulaire « Recevoir le programme » d'une expérience.
+ * Envoi vers /api/programme (Brevo), avec identification de l'expérience.
+ */
+import type { Experience } from '@/content/types';
+import Arrow from '../Arrow.astro';
+import SunMark from '../SunMark.astro';
+import Topo from '../Topo.astro';
+
+interface Props {
+  experience: Experience;
+}
+const { experience: exp } = Astro.props;
+---
+
+<section class="programme section--sand" id="programme" aria-labelledby="programme-titre" data-form-root="programme">
+  <Topo class="programme__topo" />
+  <div class="container programme__inner">
+    <div class="programme__text" data-reveal>
+      <p class="kicker">Le programme</p>
+      <h2 class="h-serif" id="programme-titre">Envie de rejoindre l’aventure ?</h2>
+      <p class="lede">
+        Laisse-nous ton prénom et ton email : tu recevras le programme complet de <strong>{exp.name}</strong> en {exp.country}
+        {exp.programmeUrl ? ' par email, et tu pourras le consulter immédiatement.' : ' par email, dès qu’il est disponible.'}
+      </p>
+      <p class="programme__note">
+        <SunMark size={14} class="programme__note-sun" />
+        Une demande de programme ne constitue pas une réservation.
+      </p>
+    </div>
+
+    <div class="programme__panel" data-reveal style="--reveal-delay: 120ms">
+      <form class="form" method="post" action="/api/programme" novalidate>
+        <input type="hidden" name="experience" value={exp.slug} />
+        <div class="honeypot" aria-hidden="true">
+          <label>Ne pas remplir <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="programme-prenom">Prénom</label>
+          <input
+            class="input"
+            id="programme-prenom"
+            name="prenom"
+            type="text"
+            autocomplete="given-name"
+            required
+            aria-describedby="programme-prenom-erreur"
+          />
+          <p class="field__error" id="programme-prenom-erreur" data-error-for="prenom"></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="programme-email">Email</label>
+          <input
+            class="input"
+            id="programme-email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            inputmode="email"
+            required
+            aria-describedby="programme-email-erreur"
+          />
+          <p class="field__error" id="programme-email-erreur" data-error-for="email"></p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="programme-whatsapp">
+            Numéro WhatsApp <span class="field__optional">(facultatif)</span>
+          </label>
+          <input
+            class="input"
+            id="programme-whatsapp"
+            name="whatsapp"
+            type="tel"
+            autocomplete="tel"
+            inputmode="tel"
+            placeholder="+33 6 12 34 56 78"
+            aria-describedby="programme-whatsapp-aide programme-whatsapp-erreur"
+          />
+          <p class="field__hint" id="programme-whatsapp-aide">Avec l’indicatif du pays.</p>
+          <p class="field__error" id="programme-whatsapp-erreur" data-error-for="whatsapp"></p>
+        </div>
+
+        <label class="checkbox">
+          <input type="checkbox" name="consentement" value="on" />
+          <span>J’accepte de recevoir les informations sur cette expérience par WhatsApp <span class="field__optional">(facultatif)</span>.</span>
+        </label>
+
+        <p class="form-status" role="status" aria-live="polite" data-status></p>
+
+        <button class="btn btn--block" type="submit" data-submit>
+          <span data-submit-label>Recevoir le programme</span>
+          <Arrow />
+        </button>
+
+        <p class="form__legal">
+          Tes informations servent uniquement à t’envoyer le programme et les nouvelles de cette expérience.
+        </p>
+      </form>
+
+      <div class="success" hidden data-success>
+        <SunMark size={36} class="success__sun" />
+        <h3 class="h3" tabindex="-1">C’est envoyé !</h3>
+        <p>
+          <span data-success-name>Merci. </span>
+          {
+            exp.programmeUrl
+              ? 'Le programme arrive dans ta boîte mail, et tu peux déjà le consulter ici.'
+              : 'Ta demande est bien enregistrée : tu recevras le programme par email dès qu’il est disponible.'
+          }
+        </p>
+        <a class="btn success__link" href={exp.programmeUrl ?? '#'} target="_blank" rel="noopener" hidden={!exp.programmeUrl} data-success-link>
+          Consulter le programme
+          <Arrow />
+        </a>
+        <p class="success__note">Pense à vérifier tes courriers indésirables si tu ne vois rien arriver.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { enhanceForm } from '@/scripts/enhance-form';
+  enhanceForm('programme');
+</script>
+
+<style>
+  .programme {
+    position: relative;
+    overflow: hidden;
+    padding-block: var(--s-section);
+  }
+
+  .programme :global(.programme__topo) {
+    --topo-color: var(--c-brun);
+    --topo-opacity: 0.09;
+    inset: auto -10% -30% auto;
+    width: 70%;
+    height: 90%;
+  }
+
+  .programme__inner {
+    position: relative;
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  .programme__text {
+    display: grid;
+    gap: 1rem;
+    align-content: start;
+  }
+
+  .programme__note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    max-width: 32rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--c-brun);
+  }
+
+  .programme :global(.programme__note-sun) {
+    margin-top: 0.3rem;
+  }
+
+  .programme__panel {
+    background: var(--c-ivoire);
+    border-radius: var(--r-l);
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    box-shadow: var(--shadow-s);
+    border: 1px solid rgb(217 203 179 / 0.7);
+  }
+
+  .form {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .form__legal {
+    font-size: 0.85rem;
+    color: var(--c-gris);
+    text-align: center;
+  }
+
+  .success[hidden],
+  .form[hidden] {
+    display: none;
+  }
+
+  .success {
+    display: grid;
+    gap: 1rem;
+    justify-items: start;
+  }
+
+  .success h3:focus {
+    outline: none;
+  }
+
+  .success__link[hidden] {
+    display: none;
+  }
+
+  .success__note {
+    font-size: 0.85rem;
+    color: var(--c-gris);
+  }
+
+  @media (min-width: 64rem) {
+    .programme__inner {
+      grid-template-columns: 1fr 1.1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+  }
+</style>
