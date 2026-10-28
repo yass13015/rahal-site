@@ -65,6 +65,13 @@ const hasSocial = Boolean(instagram || whatsapp);
         <li><a href="/faq-contact">Questions fréquentes</a></li>
       </ul>
     </div>
+    <div class="footer__company" aria-label="Informations de la société">
+      <p class="footer__title">Informations de la société</p>
+      <p class="footer__company-name">RAHAL LLC</p>
+      <address>1209 Mountain Rd Pl NE, Ste R<br />Albuquerque, NM 87110<br />États-Unis</address>
+      <p><a href="mailto:rahal.experience@gmail.com">rahal.experience@gmail.com</a></p>
+      <p><a href="tel:+15055289163">+1 505 528 9163</a></p>
+    </div>
   </div>
 
   <div class="container footer__bottom">
@@ -168,6 +175,12 @@ const hasSocial = Boolean(instagram || whatsapp);
     border-color: var(--c-or);
   }
 
+  .footer__company{min-width:0;display:grid;align-content:start;gap:.5rem;color:var(--c-sable);font-size:.88rem;line-height:1.6}
+  .footer__company .footer__title{margin-bottom:.35rem}
+  .footer__company-name{font-weight:700;color:var(--c-ivoire)}
+  .footer__company address{font-style:normal}
+  .footer__company a{color:var(--c-ivoire);overflow-wrap:anywhere;text-decoration:none}
+  .footer__company a:hover{text-decoration:underline}
   .footer__bottom {
     position: relative;
     display: flex;
@@ -206,7 +219,7 @@ const hasSocial = Boolean(instagram || whatsapp);
 
   @media (min-width: 64rem) {
     .footer__inner {
-      grid-template-columns: 1.6fr 1fr 1fr 1fr;
+      grid-template-columns: 1.45fr .8fr 1fr 1.15fr 1.25fr;
     }
   }
 </style>
