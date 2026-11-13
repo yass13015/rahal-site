@@ -12,3 +12,6 @@ dist-preview/
 # système
 .DS_Store
 npm-debug.log*
+
+# copie de test isolée
+dist-staging/
